@@ -34,41 +34,41 @@ class SetupCommand extends GeneratorCommand
    *
    * @return bool|null
    */
-  // public function handle()
-  // {
-  //   $stubsList = [
-  //     'Log'                       => 'models/log.stub',
-  //     'LogEvent'                  => 'models/logevent.stub',
-  //     'Loggable'                  => 'models/loggable.stub',
-  //     'DescriptionLogConstructor' => 'log-constructors/description.stub'
-  //   ];
+  public function handle()
+  {
+    //   $stubsList = [
+    //     'Log'                       => 'models/log.stub',
+    //     'LogEvent'                  => 'models/logevent.stub',
+    //     'Loggable'                  => 'models/loggable.stub',
+    //     'DescriptionLogConstructor' => 'log-constructors/description.stub'
+    //   ];
 
 
-  //   $this->info('Welcome to the Tridmedia Logging config generator');
+    //   $this->info('Welcome to the Tridmedia Logging config generator');
 
 
-  //   $this->callSilent('vendor:publish', ['--provider' => 'Tridmedia\Logging\LoggingServiceProvider']);
+    $this->callSilent('vendor:publish', ['--provider' => 'Kerroline\PhpGoExcel\PhpGoExcelServiceProvider']);
 
-  //   $this->info('Publish config and migrations: successful');
-
-
-  //   foreach ($stubsList as $stubName => $stubPath) {
-
-  //     $qualifyName = $this->qualifyClass($stubName);
-
-  //     if ($this->alreadyExists($qualifyName)) {
-  //       $this->error($qualifyName . ' already exists!');
-  //       return false;
-  //     }
+    $this->info('Publish config: successful');
 
 
-  //     $this->buildStub($qualifyName, $stubPath);
+    //   foreach ($stubsList as $stubName => $stubPath) {
 
-  //     $this->info($qualifyName . ' created successfully.');
-  //   }
+    //     $qualifyName = $this->qualifyClass($stubName);
 
-  //   $this->info($this->type . ' created successfully.');
-  // }
+    //     if ($this->alreadyExists($qualifyName)) {
+    //       $this->error($qualifyName . ' already exists!');
+    //       return false;
+    //     }
+
+
+    //     $this->buildStub($qualifyName, $stubPath);
+
+    //     $this->info($qualifyName . ' created successfully.');
+    //   }
+
+    //   $this->info($this->type . ' created successfully.');
+  }
 
   // protected function buildStub($stubName, $stubPath)
   // {

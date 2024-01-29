@@ -2,7 +2,7 @@
 
 namespace Kerroline\PhpGoExcel\Entities\Styles;
 
-use Kerroline\PhpGoExcel\Entities\Alignments\{
+use Kerroline\PhpGoExcel\Entities\Styles\Alignments\{
   Horizontal,
   ReadingOrder,
   Vertical,

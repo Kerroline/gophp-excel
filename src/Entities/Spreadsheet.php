@@ -51,6 +51,10 @@ class Spreadsheet
 
         $commandPath = config('php-go-excel.go-binary-path');
 
+        if (!file_exists($commandPath)) {
+            throw new \Exception("Php-Go-Excel: config('php-go-excel.go-binary-path') - golang binary file not found");
+        }
+
         $res = exec("{$commandPath} --filename={$filename} --dataFilename={$dataFilename}", $out, $code);
 
         if ($code !== 0) {
