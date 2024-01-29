@@ -1,6 +1,6 @@
 <?php
 
-namespace Kerroline\PhpGoExcel\Entities;
+namespace Kerroline\PhpGoExcel\Entities\Styles\Fonts;
 
 class FontFamily
 {

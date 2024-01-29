@@ -2,6 +2,12 @@
 
 namespace Kerroline\PhpGoExcel\Entities;
 
+use Kerroline\PhpGoExcel\Entities\Styles\{
+    Alignment,
+    Border,
+    Font,
+};
+
 class Style
 {
     /**

@@ -1,6 +1,6 @@
 <?php
 
-namespace Kerroline\PhpGoExcel\Entities\Alignments;
+namespace Kerroline\PhpGoExcel\Entities\Styles\Alignments;
 
 class ReadingOrder
 {

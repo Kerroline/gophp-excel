@@ -24,13 +24,13 @@ class Spreadsheet
         return $this;
     }
 
-    public function setActiveSheet()
-    {
-    }
+    // public function setActiveSheet()
+    // {
+    // }
 
-    public function addGlobalStyle(Style &$style)
-    {
-    }
+    // public function addGlobalStyle(Style &$style)
+    // {
+    // }
 
 
     public function save(string $filename)
@@ -44,17 +44,14 @@ class Spreadsheet
         ];
 
         foreach ($this->sheetList as $sheet) {
-
             $data['spreadsheet']['sheetList'][] = $sheet->serialize();
-
-            // dd($sheet);
         }
-
-        // dd($data);
 
         file_put_contents($dataFilename, json_encode($data));
 
-        $res = exec("C://Projects/_GO/gen_new.exe --filename={$filename} --dataFilename={$dataFilename}", $out, $code);
+        $commandPath = config('php-go-excel.go-binary-path');
+
+        $res = exec("{$commandPath} --filename={$filename} --dataFilename={$dataFilename}", $out, $code);
 
         if ($code !== 0) {
             throw new \Exception($res, $code);
