@@ -11,10 +11,6 @@
     "require": {
       "php": "^7.2"
     },
-    "require-dev": {
-      "orchestra/testbench": "^7.2",
-      "phpunit/phpunit": "^9.5"
-    },
     "autoload": {
       "psr-4": {
         "Kerroline\\PhpGoExcel\\": "src/"
