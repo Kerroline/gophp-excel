@@ -12,11 +12,6 @@ class PhpGoExcelServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../../config/config.php' => config_path('php-go-excel.php'),
-                //   __DIR__ . '/translations/' => resource_path(),
-            ]);
-
-            $this->commands([
-                SetupCommand::class,
             ]);
         }
     }
