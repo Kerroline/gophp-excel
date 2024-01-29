@@ -2,6 +2,12 @@
 
 namespace Kerroline\PhpGoExcel\Entities;
 
+use Kerroline\PhpGoExcel\Entities\Alignments\{
+  Horizontal,
+  ReadingOrder,
+  Vertical,
+};
+
 class Alignment
 {
   /**
@@ -11,14 +17,14 @@ class Alignment
    */
   protected $settings = [
     // 'horizontal'      => '',     // string
-    // 'indent'          => '',     // string
+    // 'indent'          => 0,     // int
     // 'justifyLastLine' => false,  // bool
-    // 'readingOrder'    => '',     // string
-    // 'relativeIndent'  => '',     // string
+    // + 'readingOrder'    => 0,     // uint64
+    // 'relativeIndent'  => ,0     // int
     // 'shrinkToFit'     => false,  // bool
     // 'textRotation'    => 0,      // int
-    // 'vertical'        => '',     // string
-    // 'wrapText'        => false,  // bool
+    // + 'vertical'        => '',     // string
+    // + 'wrapText'        => false,  // bool
   ];
 
   public static function make(): Alignment
@@ -45,13 +51,6 @@ class Alignment
     return $this;
   }
 
-  // public function setHorizontal(Horizontal $horizontal)
-  // {
-  //   $this->settings['horizontal'] = $horizontal->getPosition();
-
-  //   return $this;
-  // }
-
   public function setHorizontal(string $position)
   {
     $availablePosition = [
@@ -73,13 +72,6 @@ class Alignment
     return $this;
   }
 
-  // public function setVertical(Vertical $vertical)
-  // {
-  //   $this->settings['vertical'] = $vertical->getPosition();
-
-  //   return $this;
-  // }
-
   public function setVertical(string $position)
   {
     $availablePosition = [
@@ -94,6 +86,23 @@ class Alignment
     }
 
     $this->settings['vertical'] = $position;
+
+    return $this;
+  }
+
+  public function setReadingOrder(int $order)
+  {
+    $availableOrder = [
+      ReadingOrder::CONTEXT_DEPENDS,
+      ReadingOrder::LEFT_TO_RIGHT,
+      ReadingOrder::RIGHT_TO_LEFT,
+    ];
+
+    if (!in_array($order, $availableOrder)) {
+      throw new \Exception("Invalid alignment reading order value");
+    }
+
+    $this->settings['readingOrder'] = $order;
 
     return $this;
   }
