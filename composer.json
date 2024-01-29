@@ -1,30 +1,37 @@
 {
-    "name": "kerroline/php-go-excel",
-    "description": "Php excel generator with using golang",
-    "license": "MIT",
-    "keywords": [
-      "laravel",
-      "excel"
-    ],
-    "type": "laravel-package",
-    "authors": [
-      {
-        "name": "Sinyagin Alexander",
-        "email": "sin.d.alex99@gmail.com"
-      }
-    ],
-    "require": {
-      "php": "~7.2",
-      "laravel/framework": "~5.5"
-    },
-    "autoload": {
-      "psr-4": {
-        "Kerroline\\PhpGoExcel\\": "src/"
-      }
-    },
-    "autoload-dev": {
-      "psr-4": {
-        "Kerroline\\PhpGoExcel\\Test\\": "tests/"
-      }
+  "name": "kerroline/php-go-excel",
+  "description": "Php excel generator with using golang",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "excel"
+  ],
+  "type": "laravel-package",
+  "authors": [
+    {
+      "name": "Sinyagin Alexander",
+      "email": "sin.d.alex99@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "~7.2",
+    "laravel/framework": "~5.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Kerroline\\PhpGoExcel\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Kerroline\\PhpGoExcel\\Test\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+        "providers": [
+          "Kerroline\\PhpGoExcel\\Providers\\PhpGoExcelServiceProvider"
+        ]
     }
   }
+}
