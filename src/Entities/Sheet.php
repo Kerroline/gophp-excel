@@ -46,6 +46,16 @@ class Sheet
      */
     protected $mergeCellList;
 
+    /**
+     * @var array
+     */
+    protected $columnWidthList;
+
+    /**
+     * @var array
+     */
+    protected $rowHeightList;
+
 
     public function __construct(string $title)
     {
@@ -56,6 +66,10 @@ class Sheet
         $this->styleList = [];
 
         $this->mergeCellList = [];
+
+        $this->columnWidthList = [];
+
+        $this->rowHeightList = [];
     }
 
     public function serialize(): array
@@ -71,13 +85,13 @@ class Sheet
             $serializedStyleList[] = $serializedStyle;
         }
 
-        // dd($serializedStyleList);
-
         return [
-            'title'     => $this->title,
-            'cellList'  => array_values($this->filledCellList),
-            'styleList' => $serializedStyleList,
-            'mergeList' => array_values($this->mergeCellList),
+            'title'           => $this->title,
+            'cellList'        => array_values($this->filledCellList),
+            'styleList'       => $serializedStyleList,
+            'mergeList'       => array_values($this->mergeCellList),
+            'columnWidthList' => $this->columnWidthList,
+            'rowHeightList'   => $this->rowHeightList,
         ];
     }
 
@@ -242,6 +256,80 @@ class Sheet
     // }
     #endregion Merge Cell
 
+    #region Column and Row Size
+    //TODO: Validate Sheet set columns width methods
+    /**
+     * [Description for setColumnWidthByAddress]
+     *
+     * @param string $colSymbol (A)
+     * @param int $width
+     *
+     * @return [type]
+     *
+     */
+    public function setColumnWidthByAddress(string $colSymbol, int $width)
+    {
+        $this->columnWidthList[$colSymbol] = $width;
+
+        return $this;
+    }
+
+    /**
+     * [Description for setColumnWidthByIndex]
+     *
+     * @param int $colIndex (A = 1)
+     * @param int $width
+     *
+     * @return [type]
+     *
+     */
+    public function setColumnWidthByIndex(int $colIndex, int $width)
+    {
+        $colSymbol = static::stringFromColumnIndex($colIndex);
+
+        $this->columnWidthList[$colSymbol] = $width;
+
+        return $this;
+    }
+
+    /**
+     * [Description for setColumnsWidth]
+     *
+     * [
+     *  'A' => 10,
+     *  'B' => 12,
+     *  ...
+     * ]
+     *
+     * @param array $columns
+     *
+     * @return [type]
+     *
+     */
+    public function setColumnsWidth(array $columns)
+    {
+        foreach ($columns as $colSymbol => $width) {
+            $this->columnWidthList[$colSymbol] = $width;
+        }
+
+        return $this;
+    }
+
+    public function setRowHeight(int $rowIndex, int $height)
+    {
+        $this->rowHeightList[$rowIndex] = $height;
+    }
+
+    public function setRowsHeight(array $rows)
+    {
+        foreach ($rows as $rowIndex => $height) {
+            $this->rowHeightList[$rowIndex] = $height;
+        }
+
+        return $this;
+    }
+    #endregion Column and Row Size
+
     #region PHP Spreadsheet Coordinate methods
 
     /**
@@ -267,7 +355,7 @@ class Sheet
      *
      * @return int Column index (A = 1)
      */
-    public static function columnIndexFromString($pString)
+    public static function columnIndexFromString(string $pString)
     {
         //    Using a lookup cache adds a slight memory overhead, but boosts speed
         //    caching using a static within the method is faster than a class static,
@@ -315,7 +403,7 @@ class Sheet
      *
      * @return string
      */
-    public static function stringFromColumnIndex($columnIndex)
+    public static function stringFromColumnIndex(int $columnIndex)
     {
         static $indexCache = [];
 
