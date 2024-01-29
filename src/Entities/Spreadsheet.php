@@ -51,6 +51,13 @@ class Spreadsheet
 
         $commandPath = config('php-go-excel.go-binary-path');
 
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            //echo 'This is a server using Windows';
+            $commandPath .= '.exe';
+        } else {
+            //echo 'This is a server not using Windows';
+        }
+
         if (!file_exists($commandPath)) {
             throw new \Exception("Php-Go-Excel: config('php-go-excel.go-binary-path') - golang binary file not found");
         }
