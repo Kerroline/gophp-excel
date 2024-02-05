@@ -35,8 +35,6 @@ class Spreadsheet
 
     public function save(string $file, string $dataFile, string $commandPath)
     {
-        // $dataFile = storage_path('report_data.json');
-
         $data = [
             'spreadsheet' => [
                 'sheetList' => []
@@ -48,8 +46,6 @@ class Spreadsheet
         }
 
         file_put_contents($dataFile, json_encode($data));
-
-        // $commandPath = config('php-go-excel.go-binary-path');
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             //echo 'This is a server using Windows';
