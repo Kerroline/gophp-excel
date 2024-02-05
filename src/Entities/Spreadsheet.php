@@ -33,9 +33,9 @@ class Spreadsheet
     // }
 
 
-    public function save(string $filename)
+    public function save(string $file, string $dataFile, string $commandPath)
     {
-        $dataFilename = 'report_data.json';
+        // $dataFile = storage_path('report_data.json');
 
         $data = [
             'spreadsheet' => [
@@ -47,9 +47,9 @@ class Spreadsheet
             $data['spreadsheet']['sheetList'][] = $sheet->serialize();
         }
 
-        file_put_contents($dataFilename, json_encode($data));
+        file_put_contents($dataFile, json_encode($data));
 
-        $commandPath = config('php-go-excel.go-binary-path');
+        // $commandPath = config('php-go-excel.go-binary-path');
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             //echo 'This is a server using Windows';
@@ -62,10 +62,12 @@ class Spreadsheet
             throw new \Exception("Php-Go-Excel: config('php-go-excel.go-binary-path') - golang binary file not found");
         }
 
-        $res = exec("{$commandPath} --filename={$filename} --dataFilename={$dataFilename}", $out, $code);
+        $res = exec("{$commandPath} --filename={$file} --dataFilename={$dataFile}", $out, $code);
 
         if ($code !== 0) {
             throw new \Exception($res, $code);
         }
+
+        unlink($dataFile);
     }
 }
