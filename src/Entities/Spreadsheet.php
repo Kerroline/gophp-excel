@@ -28,11 +28,25 @@ class Spreadsheet
     // {
     // }
 
-    // public function addGlobalStyle(Style &$style)
-    // {
-    // }
+    public function serialize(): array
+    {
+        $serializedSheets = [];
 
+        /** @var Sheet $sheet */
+        foreach ($this->sheetList as $sheet) {
+            $serializedSheets[] = $sheet->serialize();
+        }
 
+        return [
+            'spreadsheet' => [
+                'sheetList' => $serializedSheets,
+            ]
+        ];
+    }
+
+    /**
+     * @deprecated deprecated since version 0.1.*
+     */
     public function save(string $file, string $dataFile, string $commandPath)
     {
         $data = [
@@ -41,6 +55,7 @@ class Spreadsheet
             ]
         ];
 
+        /** @var Sheet $sheet */
         foreach ($this->sheetList as $sheet) {
             $data['spreadsheet']['sheetList'][] = $sheet->serialize();
         }
