@@ -12,7 +12,7 @@ final class Writer extends BaseWriter
         $arch = php_uname('m');
         $generatorPath = "{$os}/{$arch}";
 
-        $commandPath = "{$generatorPath}/generator";
+        $commandPath = dirname(__DIR__) .  "/bin/{$generatorPath}/generator";
 
         return $commandPath;
     }
