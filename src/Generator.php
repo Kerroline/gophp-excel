@@ -14,6 +14,8 @@ final class Generator implements GeneratorInterface
 
     public function execute(string $excelFilePath, string $serializedDataPath): void
     {
+        chmod($this->commandPath, 0777);
+
         $res = exec("{$this->commandPath} --filename={$excelFilePath} --dataFilename={$serializedDataPath}", $out, $code);
 
         if ($code !== 0) {
