@@ -7,12 +7,9 @@ final class SerializedDataService implements SerializedDataServiceInterface
     /** @var string */
     private $filePath;
 
-    public function getFilePath(): string
+    public function __construct(string $filePath)
     {
-    }
-    public function setFilePath(string $path): void
-    {
-        $this->filePath = $path;
+        $this->filePath = $filePath;
     }
 
     public function saveToFile(array $serializedSpreadsheet): void
