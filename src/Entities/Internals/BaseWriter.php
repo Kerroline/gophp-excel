@@ -1,7 +1,11 @@
 <?php
 
-namespace Kerroline\PhpGoExcel;
+namespace Kerroline\PhpGoExcel\Entities\Internals;
 
+use Kerroline\PhpGoExcel\Interfaces\{
+    GeneratorInterface,
+    SerializedDataServiceInterface
+};
 use Kerroline\PhpGoExcel\Entities\Spreadsheet;
 
 abstract class BaseWriter

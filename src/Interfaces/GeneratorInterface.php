@@ -1,6 +1,6 @@
 <?php
 
-namespace Kerroline\PhpGoExcel;
+namespace Kerroline\PhpGoExcel\Interfaces;
 
 interface GeneratorInterface
 {

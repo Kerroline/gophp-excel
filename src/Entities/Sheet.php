@@ -2,7 +2,9 @@
 
 namespace Kerroline\PhpGoExcel\Entities;
 
-class Sheet
+use Kerroline\PhpGoExcel\Interfaces\SerializableEntityInterface;
+
+class Sheet implements SerializableEntityInterface
 {
     /**
      * [Description for $title]
@@ -355,7 +357,7 @@ class Sheet
      *
      * @return int Column index (A = 1)
      */
-    public static function columnIndexFromString(string $pString)
+    public static function columnIndexFromString(string $pString): int
     {
         //    Using a lookup cache adds a slight memory overhead, but boosts speed
         //    caching using a static within the method is faster than a class static,
@@ -403,7 +405,7 @@ class Sheet
      *
      * @return string
      */
-    public static function stringFromColumnIndex(int $columnIndex)
+    public static function stringFromColumnIndex(int $columnIndex): string
     {
         static $indexCache = [];
 

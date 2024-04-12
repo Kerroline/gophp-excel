@@ -2,6 +2,7 @@
 
 namespace Kerroline\PhpGoExcel\Entities\Styles;
 
+
 class Border
 {
     // public const POSITION_NONE   = 'none';

@@ -2,12 +2,14 @@
 
 namespace Kerroline\PhpGoExcel\Entities;
 
-class Spreadsheet
+use Kerroline\PhpGoExcel\Interfaces\SerializableEntityInterface;
+
+class Spreadsheet implements SerializableEntityInterface
 {
     /**
      * [Description for $sheetList]
      *
-     * @var array
+     * @var array<Sheet>
      */
     protected $sheetList;
 

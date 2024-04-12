@@ -1,6 +1,8 @@
 <?php
 
-namespace Kerroline\PhpGoExcel;
+namespace Kerroline\PhpGoExcel\Entities\Internals;
+
+use Kerroline\PhpGoExcel\Interfaces\SerializedDataServiceInterface;
 
 final class SerializedDataService implements SerializedDataServiceInterface
 {

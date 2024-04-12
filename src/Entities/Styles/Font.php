@@ -2,7 +2,9 @@
 
 namespace Kerroline\PhpGoExcel\Entities\Styles;
 
-class Font
+use Kerroline\PhpGoExcel\Interfaces\SerializableEntityInterface;
+
+class Font implements SerializableEntityInterface
 {
     /**
      * Undocumented variable
