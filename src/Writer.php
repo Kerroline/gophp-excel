@@ -8,13 +8,17 @@ final class Writer extends BaseWriter
 {
     protected function getGeneratorCommandPath(): string
     {
+        /** 
+         * TODO: Обдумать сокращение архитектуры до 32/64
+         * Как сюда врезать винду
+         */
         $commandPath = '';
 
         $os = php_uname('s');
         $arch = php_uname('m');
-        $generatorPath = "{$os}/{$arch}";
+        $osTemplate = "{$os}/{$arch}";
 
-        $commandPath = dirname(__DIR__) .  "/bin/{$generatorPath}/generator";
+        $commandPath = dirname(__DIR__) .  "/bin/{$osTemplate}/generator";
 
         return $commandPath;
     }

@@ -201,7 +201,7 @@ class Sheet implements SerializableEntityInterface
         ];
     }
 
-    public function setCellStyleByCoordinates(int $colIndex, int $rowIndex, Style $style)
+    public function setCellStyleByCoordinates(int $colIndex, int $rowIndex, Style &$style)
     {
         $cell = $this->calculateCellAddress($colIndex, $rowIndex);
 
@@ -214,7 +214,7 @@ class Sheet implements SerializableEntityInterface
         ];
     }
 
-    public function setCellStyleByRangeCoordinates(int $fromColIndex, int $fromRowIndex, int $toColIndex, int $toRowIndex, Style $style)
+    public function setCellStyleByRangeCoordinates(int $fromColIndex, int $fromRowIndex, int $toColIndex, int $toRowIndex, Style &$style)
     {
         $fromCell = $this->calculateCellAddress($fromColIndex, $fromRowIndex);
         $toCell = $this->calculateCellAddress($toColIndex, $toRowIndex);
