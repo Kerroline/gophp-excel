@@ -10,11 +10,11 @@ use Kerroline\PhpGoExcel\Entities\Spreadsheet;
 
 abstract class BaseWriter
 {
-    abstract protected function getGeneratorCommandPath(): string;
-    abstract protected function getDataFilePath(): string;
+    private const BITS_IN_BYTE = 8;
+    private const WINDOWS = 'Win';
 
 
-    public function save(Spreadsheet $spreadsheet, string $filePath): void
+    public final function save(Spreadsheet $spreadsheet, string $filePath): void
     {
         $serializedSpreadsheet = $spreadsheet->serialize();
 
@@ -28,13 +28,35 @@ abstract class BaseWriter
     }
 
 
-    protected function getDataService(): SerializedDataServiceInterface
+    protected final function getDataService(): SerializedDataServiceInterface
     {
         return new SerializedDataService($this->getDataFilePath());
     }
 
-    protected function getGenerator(): GeneratorInterface
+    protected final function getGenerator(): GeneratorInterface
     {
         return new Generator($this->getGeneratorCommandPath());
+    }
+
+    protected function getGeneratorCommandPath(): string
+    {
+        $os = ucfirst(strtolower(substr(PHP_OS, 0, 3))) === static::WINDOWS
+            ? static::WINDOWS
+            : PHP_OS;
+
+        $osArch = static::BITS_IN_BYTE * PHP_INT_SIZE;
+
+        $arch = "x{$osArch}";
+
+        $osTemplate = "{$os}/{$arch}";
+
+        $commandPath = dirname(__DIR__, 3) .  "/bin/{$osTemplate}/generator";
+
+        return $commandPath;
+    }
+
+    protected function getDataFilePath(): string
+    {
+        return dirname(__DIR__, 3) . '/data/json_data.json';
     }
 }
