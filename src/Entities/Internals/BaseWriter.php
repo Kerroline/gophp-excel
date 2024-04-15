@@ -40,11 +40,11 @@ abstract class BaseWriter
 
     protected function getGeneratorCommandPath(): string
     {
-        $os = ucfirst(strtolower(substr(PHP_OS, 0, 3))) === static::WINDOWS
-            ? static::WINDOWS
+        $os = ucfirst(strtolower(substr(PHP_OS, 0, 3))) === self::WINDOWS
+            ? self::WINDOWS
             : PHP_OS;
 
-        $osArch = static::BITS_IN_BYTE * PHP_INT_SIZE;
+        $osArch = self::BITS_IN_BYTE * PHP_INT_SIZE;
 
         $arch = "x{$osArch}";
 
