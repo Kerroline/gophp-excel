@@ -28,23 +28,4 @@ mv vendor/kerroline/gophp-excel/go-generator/bin/generator app/PhpGoExcel/genera
 
 Examples until 0.1.*: 
 
-```
-$report = new Spreadsheet();
 
-$testSheet = new Sheet('Первый лист');
-
-$testSheet->setCellValue('A1', 123);
-
-$report->addSheet($testSheet);
-
-$fileName2 = 'Тестовый отчет на ГО.xlsx';
-$filePath = dirname(__DIR__, 2) . '/pge/export_report.xlsx';
-$dataFile = dirname(__DIR__, 2) . '/pge/data_file.json';
-$commandPath = dirname(__DIR__, 2) . '/pge/generator';
-
-$report->save(
-    $filePath,
-    $dataFile,
-    $commandPath,
-);
-```

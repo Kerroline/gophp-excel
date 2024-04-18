@@ -6,6 +6,11 @@ use Kerroline\PhpGoExcel\Interfaces\SerializableEntityInterface;
 
 class Sheet implements SerializableEntityInterface
 {
+    public const CellValueAddressKey = 'address';
+    public const CellValueValueKey   = 'value';
+
+    public const MergeFromKey = 'from';
+    public const MergeToKey   = 'to';
     /**
      * [Description for $title]
      *
@@ -112,42 +117,36 @@ class Sheet implements SerializableEntityInterface
 
 
     #region Test Garbage
-    // public function getMaxRowIndex(): int
-    // {
-    //   return $this->maxRowIndex;
-    // }
+    public function getMaxRowIndex(): int
+    {
+        return $this->maxRowIndex;
+    }
 
-    // public function getMaxRowNumber(): int
-    // {
-    //   return $this->getMaxRowIndex();
-    // }
+    public function getMaxColumnIndex(): int
+    {
+        return $this->maxColumnIndex;
+    }
 
-    // public function getMaxColumnIndex(): int
-    // {
-    //   return $this->maxColumnIndex;
-    // }
-
-    // public function getMaxColumnSymbol(): int
-    // {
-    //   return static::stringFromColumnIndex($this->maxColumnIndex);
-    // }
+    public function getMaxColumnSymbol(): int
+    {
+        return static::stringFromColumnIndex($this->maxColumnIndex);
+    }
     #endregion Test Garbage
 
     #region Set Cell Value
 
     //TODO: Validate string and array cell index
     /**
-     * [Description for setCellValue]
-     *
      * @param string $cell
      * @param mixed $value
      */
-    public function setCellValue(string $cell, $value): void
+    public function setCellValueByAddress(string $cell, $value): void
     {
-        $this->filledCellList[$cell] = [
-            'address' => $cell,
-            'value' => $value,
-        ];
+        [$colSymbol, $rowIndex] = static::coordinateFromString($cell);
+
+        $colIndex = static::columnIndexFromString($colSymbol);
+
+        $this->setCellValue($colIndex, $rowIndex, $value);
     }
 
     /**
@@ -159,9 +158,7 @@ class Sheet implements SerializableEntityInterface
      */
     public function setCellValueByCoordinates(int $colIndex, int $rowIndex, $value): void
     {
-        $cell = $this->calculateCellAddress($colIndex, $rowIndex);
-
-        $this->setCellValue($cell, $value);
+        $this->setCellValue($colIndex, $rowIndex, $value);
     }
 
     public function setRow(int $rowIndex, array $values): void
@@ -214,7 +211,7 @@ class Sheet implements SerializableEntityInterface
         ];
     }
 
-    public function setCellStyleByRangeCoordinates(int $fromColIndex, int $fromRowIndex, int $toColIndex, int $toRowIndex, Style &$style)
+    public function setCellStyleByRangeCoordinates(int $fromColIndex, int $fromRowIndex, int $toColIndex, int $toRowIndex, Style $style)
     {
         $fromCell = $this->calculateCellAddress($fromColIndex, $fromRowIndex);
         $toCell = $this->calculateCellAddress($toColIndex, $toRowIndex);
@@ -233,8 +230,8 @@ class Sheet implements SerializableEntityInterface
     public function mergeCellByAddress(string $fromCell, string $toCell)
     {
         $this->mergeCellList[] = [
-            'from'  => $fromCell,
-            'to'    => $toCell,
+            self::MergeFromKey => $fromCell,
+            self::MergeToKey   => $toCell,
         ];
     }
 
@@ -244,8 +241,8 @@ class Sheet implements SerializableEntityInterface
         $toCell = $this->calculateCellAddress($toColIndex, $toRowIndex);
 
         $this->mergeCellList[] = [
-            'from'  => $fromCell,
-            'to'    => $toCell,
+            self::MergeFromKey => $fromCell,
+            self::MergeToKey   => $toCell,
         ];
     }
 
@@ -422,5 +419,40 @@ class Sheet implements SerializableEntityInterface
 
         return $indexCache[$columnIndex];
     }
+
+    public static function coordinateFromString(string $cellAddress): array
+    {
+        if (preg_match('/^(?<col>\$?[A-Z]{1,3})(?<row>\$?\d{1,7})$/i', $cellAddress, $matches)) {
+            return [$matches['col'], $matches['row']];
+        } elseif ($cellAddress === '') {
+            throw new \Exception('Cell coordinate can not be zero-length string');
+        }
+
+        throw new \Exception('Invalid cell coordinate ' . $cellAddress);
+    }
     #endregion PHP Spreadsheet Coordinate methods
+
+
+    private function setCellValue(int $colIndex, int $rowIndex, $value)
+    {
+        $cell = $this->calculateCellAddress($colIndex, $rowIndex);
+
+        $this->updateMaxCell($colIndex, $rowIndex);
+
+        $this->filledCellList[$cell] = [
+            self::CellValueAddressKey => $cell,
+            self::CellValueValueKey   => $value,
+        ];
+    }
+
+    private function updateMaxCell(int $colIndex, int $rowIndex)
+    {
+        if ($this->maxColumnIndex < $colIndex) {
+            $this->maxColumnIndex = $colIndex;
+        }
+
+        if ($this->maxRowIndex < $rowIndex) {
+            $this->maxRowIndex = $rowIndex;
+        }
+    }
 }
