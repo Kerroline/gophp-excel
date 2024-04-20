@@ -6,12 +6,15 @@ use Kerroline\PhpGoExcel\Interfaces\SerializableEntityInterface;
 
 class Spreadsheet implements SerializableEntityInterface
 {
-    /**
-     * [Description for $sheetList]
-     *
-     * @var array<Sheet>
-     */
+    public const ACTIVE_SHEET_KEY = 'activeSheet';
+    public const SHEET_LIST_KEY = 'sheetList';
+
+
+    /** @var array<string,Sheet> */
     protected $sheetList;
+
+    /** @var string */
+    protected $activeSheet;
 
     public function __construct()
     {
@@ -19,68 +22,59 @@ class Spreadsheet implements SerializableEntityInterface
     }
 
     //TODO: Индексация листов
-    public function addSheet(Sheet $sheet)
+    /**
+     * @throws \Exception
+     */
+    public function addSheet(Sheet $sheet): void
     {
-        array_push($this->sheetList, $sheet);
+        $sheetTitle = $sheet->getTitle();
 
-        return $this;
+        $isSheetExist = array_key_exists(
+            $sheetTitle,
+            $this->sheetList
+        );
+
+        if ($isSheetExist) {
+            throw new \Exception('Sheet is already exist');
+        }
+
+        $this->sheetList[$sheetTitle] = $sheet;
     }
 
-    // public function setActiveSheet()
-    // {
-    // }
+    /**
+     * @param  string|Sheet  $sheetOrTitle
+     * @throws \Exception
+     */
+    public function setActiveSheet($sheetOrTitle)
+    {
+        if ($sheetOrTitle instanceof Sheet) {
+            $sheetOrTitle = $sheetOrTitle->getTitle();
+        }
+
+        $isSheetExist = in_array(
+            $sheetOrTitle,
+            array_keys($this->sheetList)
+        );
+
+        if (!$isSheetExist) {
+            throw new \Exception('Sheet does not exist');
+        }
+
+        $this->activeSheet = $sheetOrTitle;
+    }
 
     public function serialize(): array
     {
         $serializedSheets = [];
 
-        /** @var Sheet $sheet */
         foreach ($this->sheetList as $sheet) {
             $serializedSheets[] = $sheet->serialize();
         }
 
         return [
             'spreadsheet' => [
-                'sheetList' => $serializedSheets,
+                self::SHEET_LIST_KEY => $serializedSheets,
             ]
         ];
-    }
-
-    /**
-     * @deprecated deprecated since version 0.1.*
-     */
-    public function save(string $file, string $dataFile, string $commandPath)
-    {
-        $data = [
-            'spreadsheet' => [
-                'sheetList' => []
-            ]
-        ];
-
-        /** @var Sheet $sheet */
-        foreach ($this->sheetList as $sheet) {
-            $data['spreadsheet']['sheetList'][] = $sheet->serialize();
-        }
-
-        file_put_contents($dataFile, json_encode($data));
-
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            //echo 'This is a server using Windows';
-            $commandPath .= '.exe';
-        } else {
-            //echo 'This is a server not using Windows';
-        }
-
-        if (!file_exists($commandPath)) {
-            throw new \Exception("Php-Go-Excel: config('php-go-excel.go-binary-path') - golang binary file not found");
-        }
-
-        $res = exec("{$commandPath} --filename={$file} --dataFilename={$dataFile}", $out, $code);
-
-        if ($code !== 0) {
-            throw new \Exception($res, $code);
-        }
-
-        unlink($dataFile);
     }
 }
