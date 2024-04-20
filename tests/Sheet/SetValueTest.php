@@ -2,10 +2,10 @@
 
 namespace Sheet;
 
-use Kerroline\PhpGoExcel\Entities\Sheet;
 use PHPUnit\Framework\TestCase;
+use Kerroline\PhpGoExcel\Entities\Sheet;
 
-class testTest extends TestCase
+class setValueTest extends TestCase
 {
     private const CellAddress = 'A1';
     private const RowIndex = 1;
