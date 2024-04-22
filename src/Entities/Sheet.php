@@ -292,26 +292,26 @@ class Sheet implements SerializableEntityInterface
     }
 
     /**
-     * [Description for setColumnsWidth]
-     *
-     * [
-     *  'A' => 10,
-     *  'B' => 12,
-     *  ...
-     * ]
+     * ['A' => 10, 'B' => 12, ... 'E' => 5, ...] is associative 
+     * or 
+     * ['key1' => 10, 'key2' => 12, 'key3' => 3 ...] is not associative ($isAssociative = false)
+     * auto transform to associative ['A' => 10, 'B' => 12, 'C' => 3 ...]
      *
      * @param array $columns
-     *
-     * @return [type]
-     *
      */
-    public function setColumnsWidth(array $columns)
+    public function setColumnsWidth(array $columns, bool $isAssociative = true): void
     {
+        if (!$isAssociative) {
+            foreach (array_values($columns) as $index => $width) {
+                $colSymbol = static::stringFromColumnIndex($index + 1);
+
+                $this->columnWidthList[$colSymbol] = $width;
+            }
+        }
+
         foreach ($columns as $colSymbol => $width) {
             $this->columnWidthList[$colSymbol] = $width;
         }
-
-        return $this;
     }
 
     public function setRowHeight(int $rowIndex, int $height)

@@ -21,7 +21,6 @@ class Spreadsheet implements SerializableEntityInterface
         $this->sheetList = [];
     }
 
-    //TODO: Индексация листов
     /**
      * @throws \Exception
      */
@@ -29,10 +28,7 @@ class Spreadsheet implements SerializableEntityInterface
     {
         $sheetTitle = $sheet->getTitle();
 
-        $isSheetExist = array_key_exists(
-            $sheetTitle,
-            $this->sheetList
-        );
+        $isSheetExist = $this->isSheetExist($sheetTitle);
 
         if ($isSheetExist) {
             throw new \Exception('Sheet is already exist');
@@ -45,16 +41,13 @@ class Spreadsheet implements SerializableEntityInterface
      * @param  string|Sheet  $sheetOrTitle
      * @throws \Exception
      */
-    public function setActiveSheet($sheetOrTitle)
+    public function setActiveSheet($sheetOrTitle): void
     {
         if ($sheetOrTitle instanceof Sheet) {
             $sheetOrTitle = $sheetOrTitle->getTitle();
         }
 
-        $isSheetExist = in_array(
-            $sheetOrTitle,
-            array_keys($this->sheetList)
-        );
+        $isSheetExist = $this->isSheetExist($sheetOrTitle);
 
         if (!$isSheetExist) {
             throw new \Exception('Sheet does not exist');
@@ -76,5 +69,14 @@ class Spreadsheet implements SerializableEntityInterface
                 self::SHEET_LIST_KEY => $serializedSheets,
             ]
         ];
+    }
+
+
+    private function isSheetExist(string $title): bool
+    {
+        return array_key_exists(
+            $title,
+            $this->sheetList
+        );
     }
 }
