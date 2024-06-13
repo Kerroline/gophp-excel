@@ -4,5 +4,5 @@ namespace Kerroline\PhpGoExcel\Interfaces;
 
 interface GeneratorInterface
 {
-    public function execute(string $excelFilePath, string $serializedDataPath): void;
+    public function execute(array $data): string;
 }

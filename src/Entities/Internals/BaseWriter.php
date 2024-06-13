@@ -13,24 +13,29 @@ abstract class BaseWriter
     private const BITS_IN_BYTE = 8;
     private const WINDOWS = 'Win';
 
-
-    public final function save(Spreadsheet $spreadsheet, string $filePath): void
+    public final function saveAsString(Spreadsheet $spreadsheet, string $filePath): string 
     {
-        $serializedSpreadsheet = $spreadsheet->serialize();
-
-        $dataService = $this->getDataService();
-        $dataService->saveToFile($serializedSpreadsheet);
-
-        $generator = $this->getGenerator();
-        $generator->execute($filePath, $this->getDataFilePath());
-
-        $dataService->deleteFile();
+        return $this->save($spreadsheet, $filePath, true);
     }
 
-
-    protected final function getDataService(): SerializedDataServiceInterface
+    public final function saveAsFile(Spreadsheet $spreadsheet, string $filePath): void 
     {
-        return new SerializedDataService($this->getDataFilePath());
+        $this->save($spreadsheet, $filePath);
+    }
+
+    private final function save(Spreadsheet $spreadsheet, string $filePath, bool $asString = false): string 
+    {
+        $data = [
+            'spreadsheet' => $spreadsheet->serialize(),
+            'filename' => $filePath,
+            'asString' => $asString,
+        ];
+
+        $generator = $this->getGenerator();
+
+        $result = $generator->execute($data);
+
+        return $result;
     }
 
     protected final function getGenerator(): GeneratorInterface
@@ -53,10 +58,5 @@ abstract class BaseWriter
         $commandPath = dirname(__DIR__, 3) .  "/bin/{$osTemplate}/generator";
 
         return $commandPath;
-    }
-
-    protected function getDataFilePath(): string
-    {
-        return dirname(__DIR__, 3) . '/data/json_data.json';
     }
 }

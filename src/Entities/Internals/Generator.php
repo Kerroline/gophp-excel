@@ -14,13 +14,38 @@ final class Generator implements GeneratorInterface
         $this->commandPath = $commandPath;
     }
 
-    public function execute(string $excelFilePath, string $serializedDataPath): void
+    public function execute(array $data): string
     {
+        $serializedData = json_encode($data);
+
         chmod($this->commandPath, 0777);
 
-        $command = "{$this->commandPath} --filename={$excelFilePath} --dataFilename={$serializedDataPath}";
+        $descriptorSpec = [
+            ["pipe", "r"],  // stdin
+            ["pipe", "w"],  // stdout
+            ["pipe", "w"],  // stderr
+        ];
 
-        $res = exec($command, $out, $code);
+        $process = proc_open(
+            $this->commandPath, 
+            $descriptorSpec, 
+            $pipes
+        );
+
+        $result = '';
+        $code = -1;
+
+        if (is_resource($process)) {
+            fwrite($pipes[0], $serializedData);
+            fclose($pipes[0]);
+
+            $result = stream_get_contents($pipes[1]);
+
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+
+            $code = proc_close($process);
+        }
 
         if ($code === 126) {
             throw new \Exception('Command is not executable');
@@ -31,7 +56,11 @@ final class Generator implements GeneratorInterface
         }
 
         if ($code !== 0) {
-            throw new \Exception($res, $code);
+            throw new \Exception($result, $code);
+        }
+
+        if ($code === 0) {
+            return $result;
         }
     }
 }

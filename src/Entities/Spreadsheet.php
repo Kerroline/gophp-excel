@@ -65,9 +65,7 @@ class Spreadsheet implements SerializableEntityInterface
         }
 
         return [
-            'spreadsheet' => [
-                self::SHEET_LIST_KEY => $serializedSheets,
-            ]
+            self::SHEET_LIST_KEY => $serializedSheets,
         ];
     }
 

@@ -1,15 +1,27 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/xuri/excelize/v2"
 )
+
+const SUCCESS_CODE = 0
+const UNMARSHAL_DATA_ERROR_CODE = 10
+const SCAN_ERROR_CODE = 11
+const CLOSE_SPREADSHEET_ERROR_CODE = 12
+const CREATE_NEW_SHEET_ERROR_CODE = 13
+const CREATE_CELL_RANGE_ERROR_CODE = 14
+const CREATE_STYLE_ERROR_CODE = 15
+const GET_STYLE_ERROR_CODE = 16
+const MERGE_STYLE_ERROR_CODE = 17
+const SAVE_SPREADSHEET_AS_STRING_ERROR_CODE = 18
+const SAVE_SPREADSHEET_AS_FILE_ERROR_CODE = 19
 
 type CellRange struct {
 	From string `json:"from"`
@@ -70,25 +82,12 @@ type Spreadsheet struct {
 
 type Data struct {
 	Spreadsheet Spreadsheet `json:"spreadsheet"`
+	Filename    string      `json:"filename"`
+	AsString    bool        `json:"asString"`
 }
 
 func main() {
-	filenamePtr := flag.String("filename", "default_filename", "generated excel filename")
-
-	dataFilenamePtr := flag.String("dataFilename", "", "read file with data to excel")
-
-	// --------
-
-	flag.Parse()
-
-	// --------
-
-	jsonData, err := os.ReadFile(*dataFilenamePtr)
-
-	if err != nil {
-		fatal("os.ReadFile(*dataFilenamePtr)", err)
-		log.Fatal(err)
-	}
+	data := readData()
 
 	// ---------
 
@@ -96,16 +95,9 @@ func main() {
 
 	defer func() {
 		if err := spreadsheet.Close(); err != nil {
-			fatal("spreadsheet.Close()", err)
-			log.Fatal(err)
+			writeResponse(CLOSE_SPREADSHEET_ERROR_CODE, err.Error())
 		}
 	}()
-
-	// --------
-
-	var data Data
-
-	json.Unmarshal(jsonData, &data)
 
 	// ---------
 
@@ -114,9 +106,7 @@ func main() {
 
 		_, err := spreadsheet.NewSheet(sheet.Title)
 		if err != nil {
-			fatal("spreadsheet.NewSheet(sheet.Title)", err)
-			log.Fatal(err)
-			return
+			writeResponse(CREATE_NEW_SHEET_ERROR_CODE, err.Error())
 		}
 
 		// Заполняем данными полученные ячейки
@@ -156,18 +146,14 @@ func main() {
 			// Получаем интервал всех ячеек, к которым нужно применить текущий стиль `sheetStyle`
 			cellAddressListForStyling, err := rangeCreator(sheetStyle.Range)
 			if err != nil {
-				fatal("rangeCreator(sheetStyle.Range)", err)
-				log.Fatal(err)
-				return
+				writeResponse(CREATE_CELL_RANGE_ERROR_CODE, err.Error())
 			}
 
 			createdStyle := createStyle(&sheetStyle)
 
 			createdStyleId, err := spreadsheet.NewStyle(&createdStyle)
 			if err != nil {
-				fatal("spreadsheet.NewStyle(&createdStyle)", err)
-				log.Fatal(err)
-				return
+				writeResponse(CREATE_STYLE_ERROR_CODE, err.Error())
 			}
 
 			// Для каждой ячейки записываем стиль в `cellAddressStyleIdSequenceDictionary`
@@ -210,23 +196,17 @@ func main() {
 
 						currentCellStyle, err := spreadsheet.GetStyle(currentCellStyleId)
 						if err != nil {
-							fatal("spreadsheet.GetStyle(currentCellStyleId)", err)
-							log.Fatal(err)
-							return
+							writeResponse(GET_STYLE_ERROR_CODE, err.Error())
 						}
 
 						mergedStyle, err := mergeStyles(currentCellStyle, &sheetStyle)
 						if err != nil {
-							fatal("mergeStyles(currentCellStyle, &sheetStyle)", err)
-							log.Fatal(err)
-							return
+							writeResponse(MERGE_STYLE_ERROR_CODE, err.Error())
 						}
 
 						mergedStyleId, err := spreadsheet.NewStyle(mergedStyle)
 						if err != nil {
-							fatal("spreadsheet.NewStyle(mergedStyle)", err)
-							log.Fatal(err)
-							return
+							writeResponse(CREATE_STYLE_ERROR_CODE, err.Error())
 						}
 
 						mapper[mapperKey] = mergedStyleId
@@ -266,11 +246,24 @@ func main() {
 	// Убираем дефолтный лист
 	spreadsheet.DeleteSheet("Sheet1")
 
-	// Сохраняем файл с переданным наименованием
-	// Пока не понятно, поддерживает ли оно пути
-	if err := spreadsheet.SaveAs(*filenamePtr); err != nil {
-		fatal("spreadsheet.SaveAs(*filenamePtr)", err)
-		log.Fatal(err)
+	if data.AsString {
+
+		var buf bytes.Buffer
+		if err := spreadsheet.Write(&buf); err != nil {
+			writeResponse(SAVE_SPREADSHEET_AS_STRING_ERROR_CODE, err.Error())
+		}
+
+		excelString := buf.String()
+
+		writeResponse(SUCCESS_CODE, excelString)
+	} else {
+		// Сохраняем файл с переданным наименованием
+		// Пока не понятно, поддерживает ли оно пути
+		if err := spreadsheet.SaveAs(data.Filename); err != nil {
+			writeResponse(SAVE_SPREADSHEET_AS_FILE_ERROR_CODE, err.Error())
+		}
+
+		writeResponse(SUCCESS_CODE, "Save as file success")
 	}
 }
 
@@ -309,11 +302,6 @@ func rangeCreator(cellRange CellRange) ([]string, error) {
 	}
 
 	return cellAddressList, nil
-}
-
-func countIntersection(styleList []Style) int {
-
-	return 0
 }
 
 /*
@@ -445,8 +433,26 @@ func deepCopyStyle(existStyle *excelize.Style) (*excelize.Style, error) {
 	return &clone, nil
 }
 
-func fatal(message string, err error) {
-	fmt.Println(message)
-	fmt.Printf("%+v\n", err)
-	log.Fatal(err)
+func readData() Data {
+	scanner := bufio.NewScanner(os.Stdin)
+
+	if !scanner.Scan() {
+		writeResponse(SCAN_ERROR_CODE, "Scan error")
+	}
+
+	jsonData := scanner.Text()
+
+	var data Data
+
+	err := json.Unmarshal([]byte(jsonData), &data)
+	if err != nil {
+		writeResponse(UNMARSHAL_DATA_ERROR_CODE, err.Error())
+	}
+
+	return data
+}
+
+func writeResponse(code int, content string) {
+	fmt.Println(content)
+	os.Exit(code)
 }
