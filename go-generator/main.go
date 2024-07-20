@@ -1,9 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -13,7 +13,7 @@ import (
 
 const SUCCESS_CODE = 0
 const UNMARSHAL_DATA_ERROR_CODE = 10
-const SCAN_ERROR_CODE = 11
+const READ_FILE_ERROR_CODE = 11
 const CLOSE_SPREADSHEET_ERROR_CODE = 12
 const CREATE_NEW_SHEET_ERROR_CODE = 13
 const CREATE_CELL_RANGE_ERROR_CODE = 14
@@ -434,17 +434,19 @@ func deepCopyStyle(existStyle *excelize.Style) (*excelize.Style, error) {
 }
 
 func readData() Data {
-	scanner := bufio.NewScanner(os.Stdin)
+	dataFilenamePtr := flag.String("dataFilename", "", "read file with data to excel")
 
-	if !scanner.Scan() {
-		writeResponse(SCAN_ERROR_CODE, "Scan error")
+	flag.Parse()
+
+	jsonData, err := os.ReadFile(*dataFilenamePtr)
+
+	if err != nil {
+		writeResponse(READ_FILE_ERROR_CODE, err.Error())
 	}
-
-	jsonData := scanner.Text()
 
 	var data Data
 
-	err := json.Unmarshal([]byte(jsonData), &data)
+	err = json.Unmarshal(jsonData, &data)
 	if err != nil {
 		writeResponse(UNMARSHAL_DATA_ERROR_CODE, err.Error())
 	}

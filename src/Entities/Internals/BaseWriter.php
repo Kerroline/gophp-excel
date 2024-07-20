@@ -13,9 +13,9 @@ abstract class BaseWriter
     private const BITS_IN_BYTE = 8;
     private const WINDOWS = 'Win';
 
-    public final function saveAsString(Spreadsheet $spreadsheet, string $filePath): string 
+    public final function saveAsString(Spreadsheet $spreadsheet): string 
     {
-        return $this->save($spreadsheet, $filePath, true);
+        return $this->save($spreadsheet, '', true);
     }
 
     public final function saveAsFile(Spreadsheet $spreadsheet, string $filePath): void 
@@ -31,6 +31,9 @@ abstract class BaseWriter
             'asString' => $asString,
         ];
 
+        $dataService = $this->getDataService();
+        $dataService->saveToFile($serializedData);
+
         $generator = $this->getGenerator();
 
         $result = $generator->execute($data);
@@ -38,25 +41,22 @@ abstract class BaseWriter
         return $result;
     }
 
-    protected final function getGenerator(): GeneratorInterface
+    private final function getDataService(): SerializedDataServiceInterface
+    {
+        return new SerializedDataService($this->getDataFilePath());
+    }
+
+    private final function getDataFilePath(): string
+    {
+        return dirname(__DIR__, 3) . '/data/json_data.json';
+    }
+
+    private final function getGenerator(): GeneratorInterface
     {
         return new Generator($this->getGeneratorCommandPath());
     }
 
-    protected function getGeneratorCommandPath(): string
-    {
-        $os = ucfirst(strtolower(substr(PHP_OS, 0, 3))) === self::WINDOWS
-            ? self::WINDOWS
-            : PHP_OS;
 
-        $osArch = self::BITS_IN_BYTE * PHP_INT_SIZE;
-
-        $arch = "x{$osArch}";
-
-        $osTemplate = "{$os}/{$arch}";
-
-        $commandPath = dirname(__DIR__, 3) .  "/bin/{$osTemplate}/generator";
-
-        return $commandPath;
-    }
+    protected abstract function getGeneratorCommandPath(): string;
+    
 }
