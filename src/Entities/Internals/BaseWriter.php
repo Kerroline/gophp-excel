@@ -10,8 +10,8 @@ use Kerroline\PhpGoExcel\Entities\Spreadsheet;
 
 abstract class BaseWriter
 {
-    private const BITS_IN_BYTE = 8;
-    private const WINDOWS = 'Win';
+    protected abstract function getGeneratorCommandPath(): string;
+
 
     public final function saveAsString(Spreadsheet $spreadsheet): string 
     {
@@ -32,11 +32,11 @@ abstract class BaseWriter
         ];
 
         $dataService = $this->getDataService();
-        $dataService->saveToFile($serializedData);
+        $dataService->saveToFile($data);
 
         $generator = $this->getGenerator();
 
-        $result = $generator->execute($data);
+        $result = $generator->execute($this->getDataFilePath());
 
         return $result;
     }
@@ -55,8 +55,4 @@ abstract class BaseWriter
     {
         return new Generator($this->getGeneratorCommandPath());
     }
-
-
-    protected abstract function getGeneratorCommandPath(): string;
-    
 }
