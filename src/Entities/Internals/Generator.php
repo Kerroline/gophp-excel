@@ -18,10 +18,7 @@ final class Generator implements GeneratorInterface
     {
         chmod($this->commandPath, 0777);
 
-        $command = "
-            {$this->commandPath} 
-            --dataFilename={$serializedDataPath}
-        ";
+        $command = "{$this->commandPath} --dataFilename={$serializedDataPath}";
 
         $result = exec($command, $out, $code);
 

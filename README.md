@@ -14,7 +14,7 @@ MUST BE EQUAL `go version go1.21.5 linux/amd64`
 
 cd vendor/kerroline/gophp-excel/go-generator/
 
-go build -o bin/generator main.go
+go build -o generator main.go
 
 - cd root
 

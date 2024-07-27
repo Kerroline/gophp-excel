@@ -22,7 +22,7 @@ final class DefaultWriter extends BaseWriter
 
         $osTemplate = "{$os}/{$arch}";
 
-        $commandPath = dirname(__DIR__, 3) .  "/bin/{$osTemplate}/generator";
+        $commandPath = dirname(__DIR__, 1) .  "/bin/{$osTemplate}/generator";
 
         return $commandPath;
     }

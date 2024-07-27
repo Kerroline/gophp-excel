@@ -91,14 +91,17 @@ class Sheet implements SerializableEntityInterface
 
             $serializedStyleList[] = $serializedStyle;
         }
+        
+        $columnWidthList = empty($this->columnWidthList) ? null : $this->columnWidthList;
+        $rowHeightList = empty($this->rowHeightList) ? null : $this->rowHeightList;
 
         return [
             'title'           => $this->title,
             'cellList'        => array_values($this->filledCellList),
             'styleList'       => $serializedStyleList,
             'mergeList'       => array_values($this->mergeCellList),
-            'columnWidthList' => $this->columnWidthList,
-            'rowHeightList'   => $this->rowHeightList,
+            'columnWidthList' => $columnWidthList,
+            'rowHeightList'   => $rowHeightList,
         ];
     }
 
@@ -301,31 +304,31 @@ class Sheet implements SerializableEntityInterface
      */
     public function setColumnsWidth(array $columns, bool $isAssociative = true): void
     {
-        if (!$isAssociative) {
-            foreach (array_values($columns) as $index => $width) {
-                $colSymbol = static::stringFromColumnIndex($index + 1);
-
+        if ($isAssociative) {
+            foreach ($columns as $colSymbol => $width) {
                 $this->columnWidthList[$colSymbol] = $width;
             }
+
+            return;
         }
 
-        foreach ($columns as $colSymbol => $width) {
+        foreach (array_values($columns) as $index => $width) {
+            $colSymbol = static::stringFromColumnIndex($index + 1);
+
             $this->columnWidthList[$colSymbol] = $width;
         }
     }
 
-    public function setRowHeight(int $rowIndex, int $height)
+    public function setRowHeight(int $rowIndex, int $height): void
     {
         $this->rowHeightList[$rowIndex] = $height;
     }
 
-    public function setRowsHeight(array $rows)
+    public function setRowsHeight(array $rows): void
     {
         foreach ($rows as $rowIndex => $height) {
             $this->rowHeightList[$rowIndex] = $height;
         }
-
-        return $this;
     }
     #endregion Column and Row Size
 

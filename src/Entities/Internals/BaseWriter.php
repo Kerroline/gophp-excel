@@ -2,6 +2,7 @@
 
 namespace Kerroline\PhpGoExcel\Entities\Internals;
 
+use Exception;
 use Kerroline\PhpGoExcel\Interfaces\{
     GeneratorInterface,
     SerializedDataServiceInterface
@@ -15,16 +16,22 @@ abstract class BaseWriter
 
     public final function saveAsString(Spreadsheet $spreadsheet): string 
     {
-        return $this->save($spreadsheet, '', true);
+        return $this->save($spreadsheet);
     }
 
     public final function saveAsFile(Spreadsheet $spreadsheet, string $filePath): void 
     {
+        if (empty($filePath)) {
+            throw new Exception('File path cannot be empty');
+        }
+
         $this->save($spreadsheet, $filePath);
     }
 
-    private final function save(Spreadsheet $spreadsheet, string $filePath, bool $asString = false): string 
+    private final function save(Spreadsheet $spreadsheet, string $filePath = ''): string 
     {
+        $asString = empty($filePath);
+
         $data = [
             'spreadsheet' => $spreadsheet->serialize(),
             'filename' => $filePath,
@@ -37,6 +44,10 @@ abstract class BaseWriter
         $generator = $this->getGenerator();
 
         $result = $generator->execute($this->getDataFilePath());
+
+        if ($asString) {
+            $result = base64_decode($result);
+        }
 
         return $result;
     }

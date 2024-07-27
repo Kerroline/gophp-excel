@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -70,14 +70,15 @@ type Sheet struct {
 	CellList     []Cell         `json:"cellList"`
 	StyleList    []Style        `json:"styleList"`
 	MergeList    []CellRange    `json:"mergeList"`
-	ColumnsWidth map[string]int `json:"columnWidthList"`
-	RowsHeight   map[int]int    `json:"rowHeightList"`
+	ColumnsWidth map[string]int `json:"columnWidthList,omitempty"`
+	RowsHeight   map[int]int    `json:"rowHeightList,omitempty"`
 }
 
 //endregion Sheet
 
 type Spreadsheet struct {
-	SheetList []Sheet `json:"sheetList"`
+	SheetList   []Sheet `json:"sheetList"`
+	ActiveSheet *string `json:"activeSheet,omitempty"`
 }
 
 type Data struct {
@@ -247,15 +248,14 @@ func main() {
 	spreadsheet.DeleteSheet("Sheet1")
 
 	if data.AsString {
-
-		var buf bytes.Buffer
-		if err := spreadsheet.Write(&buf); err != nil {
+		buf, err := spreadsheet.WriteToBuffer()
+		if err != nil {
 			writeResponse(SAVE_SPREADSHEET_AS_STRING_ERROR_CODE, err.Error())
 		}
 
-		excelString := buf.String()
+		excelEncodedString := base64.StdEncoding.EncodeToString(buf.Bytes())
 
-		writeResponse(SUCCESS_CODE, excelString)
+		writeResponse(SUCCESS_CODE, excelEncodedString)
 	} else {
 		// Сохраняем файл с переданным наименованием
 		// Пока не понятно, поддерживает ли оно пути
