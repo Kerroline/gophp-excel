@@ -22,6 +22,7 @@ const GET_STYLE_ERROR_CODE = 16
 const MERGE_STYLE_ERROR_CODE = 17
 const SAVE_SPREADSHEET_AS_STRING_ERROR_CODE = 18
 const SAVE_SPREADSHEET_AS_FILE_ERROR_CODE = 19
+const GET_SHEET_BY_TITLE_ERROR_CODE = 20
 
 type CellRange struct {
 	From string `json:"from"`
@@ -105,7 +106,7 @@ func main() {
 	// Генерируем каждый лист
 	for _, sheet := range data.Spreadsheet.SheetList {
 
-		_, err := spreadsheet.NewSheet(sheet.Title)
+		sheetIdx, err := spreadsheet.NewSheet(sheet.Title)
 		if err != nil {
 			writeResponse(CREATE_NEW_SHEET_ERROR_CODE, err.Error())
 		}
@@ -246,6 +247,15 @@ func main() {
 
 	// Убираем дефолтный лист
 	spreadsheet.DeleteSheet("Sheet1")
+
+	if data.Spreadsheet.ActiveSheet != nil {
+		idx, err := spreadsheet.GetSheetIndex(*data.Spreadsheet.ActiveSheet)
+		if err != nil {
+			writeResponse(GET_SHEET_BY_TITLE_ERROR_CODE, err.Error())
+		}
+
+		spreadsheet.SetActiveSheet(idx)
+	}
 
 	if data.AsString {
 		buf, err := spreadsheet.WriteToBuffer()

@@ -2,6 +2,7 @@
 
 namespace Spreadsheet;
 
+use Exception;
 use Kerroline\PhpGoExcel\Entities\Sheet;
 use PHPUnit\Framework\TestCase;
 use Kerroline\PhpGoExcel\Entities\Spreadsheet;
@@ -77,5 +78,21 @@ class setActiveSheetTest extends TestCase
             $activeSheet,
             $excepted
         );
+    }
+
+    /**
+     * @covers Spreadsheet::setActiveSheet
+     */
+    public function testSetActiveSheetByInvalidTitle()
+    {
+        $spreadsheet = new Spreadsheet();
+
+        $sheet = new Sheet(self::SHEET_TITLE);
+
+        $spreadsheet->addSheet($sheet);
+
+        $this->expectException(Exception::class);
+
+        $spreadsheet->setActiveSheet('Invalid-Title');
     }
 }
