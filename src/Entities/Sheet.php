@@ -117,7 +117,7 @@ class Sheet implements SerializableEntityInterface
             self::COLUMN_SETTINGS_KEY => [
                 self::COLUMN_WIDTHS_KEY        => $columnsWidth,
                 self::COLUMN_AUTO_SIZE_KEY     => $columnsWithAutoSize,
-                self::COLUMN_ALL_AUTO_SIZE_KEY => $this->columnsAutoSize,
+                self::COLUMN_ALL_AUTO_SIZE_KEY => $this->allColumnsAutoSize,
             ],
         ];
     }
@@ -324,6 +324,13 @@ class Sheet implements SerializableEntityInterface
         }
     }
 
+    public function setAllColumnsAutoSize(bool $value = true): Sheet
+    {
+        $this->allColumnsAutoSize = $value;
+
+        return $this;
+    }
+
     public function setColumnAutoSizeByAddress(string $colSymbol, bool $autoSize = true): Sheet
     {
         $this->setColumnAutoSize($colSymbol, $autoSize);
@@ -339,6 +346,7 @@ class Sheet implements SerializableEntityInterface
 
         return $this;
     }
+
 
     private function setColumnAutoSize(string $colSymbol, bool $autoSize): void
     {
