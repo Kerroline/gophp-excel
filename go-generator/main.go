@@ -6,7 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/xuri/excelize/v2"
 )
@@ -23,6 +25,7 @@ const MERGE_STYLE_ERROR_CODE = 17
 const SAVE_SPREADSHEET_AS_STRING_ERROR_CODE = 18
 const SAVE_SPREADSHEET_AS_FILE_ERROR_CODE = 19
 const GET_SHEET_BY_TITLE_ERROR_CODE = 20
+const MATCH_COLUMN_ADDRESS_ERROR_CODE = 21
 
 type CellRange struct {
 	From string `json:"from"`
@@ -66,13 +69,19 @@ type Cell struct {
 	Value   interface{} `json:"value"`
 }
 
+type ColumnSettings struct {
+	Widths      map[string]float64 `json:"widths,omitempty"`
+	AutoSize    map[string]string  `json:"autoSize,omitempty"`
+	AllAutoSize bool               `json:"allAutoSize"`
+}
+
 type Sheet struct {
-	Title        string         `json:"title"`
-	CellList     []Cell         `json:"cellList"`
-	StyleList    []Style        `json:"styleList"`
-	MergeList    []CellRange    `json:"mergeList"`
-	ColumnsWidth map[string]int `json:"columnWidthList,omitempty"`
-	RowsHeight   map[int]int    `json:"rowHeightList,omitempty"`
+	Title          string          `json:"title"`
+	CellList       []Cell          `json:"cellList"`
+	StyleList      []Style         `json:"styleList"`
+	MergeList      []CellRange     `json:"mergeList"`
+	ColumnSettings ColumnSettings  `json:"columnSettings"`
+	RowsHeight     map[int]float64 `json:"rowHeightList,omitempty"`
 }
 
 //endregion Sheet
@@ -103,10 +112,12 @@ func main() {
 
 	// ---------
 
+	//TODO: Подумать об горутинах
+
 	// Генерируем каждый лист
 	for _, sheet := range data.Spreadsheet.SheetList {
 
-		sheetIdx, err := spreadsheet.NewSheet(sheet.Title)
+		_, err := spreadsheet.NewSheet(sheet.Title)
 		if err != nil {
 			writeResponse(CREATE_NEW_SHEET_ERROR_CODE, err.Error())
 		}
@@ -114,16 +125,23 @@ func main() {
 		// Заполняем данными полученные ячейки
 		for _, cell := range sheet.CellList {
 			spreadsheet.SetCellValue(sheet.Title, cell.Address, cell.Value)
-		}
 
-		// Выставляем ширину всех колонок
-		for cellSymbol, width := range sheet.ColumnsWidth {
-			spreadsheet.SetColWidth(sheet.Title, cellSymbol, cellSymbol, float64(width))
-		}
+			column := getColumnAddress(cell.Address)
+			_, isNeedColumnSetAutoSize := sheet.ColumnSettings.AutoSize[column]
 
-		// Выставляем высоту всех строк
-		for rowIndex, height := range sheet.RowsHeight {
-			spreadsheet.SetRowHeight(sheet.Title, rowIndex, float64(height))
+			if isNeedColumnSetAutoSize || sheet.ColumnSettings.AllAutoSize {
+
+				_, isHasCustomWidth := sheet.ColumnSettings.Widths[column]
+
+				if !isHasCustomWidth {
+					// Временный экспериментальный костыль
+					// Пока не аппрувнут https://github.com/qax-os/excelize/pull/1386
+					defaultFontSize := 10
+					columnWidth := calculateColumnWidthWithPadding(cell.Value.(string), defaultFontSize)
+
+					sheet.ColumnSettings.Widths[column] = columnWidth
+				}
+			}
 		}
 
 		/*
@@ -139,8 +157,6 @@ func main() {
 
 		// Временная болванка, которая содержит ключ объединенных стилей и айди получившегося нового стиля
 		mapper := make(map[string]int)
-
-		//TODO: Подумать об горутинах
 
 		// Применяем все интервалы стилей к текущему листу
 		for _, sheetStyle := range sheet.StyleList {
@@ -241,6 +257,17 @@ func main() {
 			spreadsheet.MergeCell(sheet.Title, cellRange.From, cellRange.To)
 		}
 
+		// место под выставления автоширины колонок
+
+		// Выставляем ширину всех колонок
+		for cellSymbol, width := range sheet.ColumnSettings.Widths {
+			spreadsheet.SetColWidth(sheet.Title, cellSymbol, cellSymbol, width)
+		}
+
+		// Выставляем высоту всех строк
+		for rowIndex, height := range sheet.RowsHeight {
+			spreadsheet.SetRowHeight(sheet.Title, rowIndex, height)
+		}
 	}
 
 	// --------
@@ -296,7 +323,7 @@ func rangeCreator(cellRange CellRange) ([]string, error) {
 
 	totalCellCount := (toColIndex - fromColIndex + 1) * (toRowIndex - fromRowIndex + 1)
 
-	cellAddressList := make([]string, totalCellCount, totalCellCount)
+	cellAddressList := make([]string, totalCellCount)
 	iterator := 0
 
 	for i := fromColIndex; i <= toColIndex; i++ {
@@ -467,4 +494,38 @@ func readData() Data {
 func writeResponse(code int, content string) {
 	fmt.Println(content)
 	os.Exit(code)
+}
+
+func getColumnAddress(cell string) string {
+	regex := regexp.MustCompile(`^[A-Z]+`)
+
+	matches := regex.FindStringSubmatch(cell)
+
+	if len(matches) > 0 {
+		return matches[0]
+	}
+
+	writeResponse(MATCH_COLUMN_ADDRESS_ERROR_CODE, "No regex match column address by cell address")
+	return ""
+}
+
+func calculateColumnWidthWithPadding(text string, fontSize int) float64 {
+	// Фишка экселя с двусторонним падингом текста
+	paddingWidth := calculateColumnWidth("n", fontSize)
+	textWidth := calculateColumnWidth(text, fontSize)
+	width := paddingWidth + textWidth
+
+	return width
+}
+
+const DEFAULT_CHARACTER_WIDTH = 8.26
+const APPROXIMATELY_COEFFICIENT = 11.0
+
+func calculateColumnWidth(text string, fontSize int) float64 {
+	textWidth := utf8.RuneCountInString(text)
+	columnWidth := DEFAULT_CHARACTER_WIDTH * float64(textWidth)
+
+	approxWidth := columnWidth * float64(fontSize) / APPROXIMATELY_COEFFICIENT
+
+	return approxWidth
 }

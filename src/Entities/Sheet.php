@@ -11,6 +11,11 @@ class Sheet implements SerializableEntityInterface
 
     public const MergeFromKey = 'from';
     public const MergeToKey   = 'to';
+
+    public const COLUMN_SETTINGS_KEY = 'columnSettings';
+    public const COLUMN_WIDTHS_KEY = 'widths';
+    public const COLUMN_AUTO_SIZE_KEY = 'autoSize';
+    public const COLUMN_ALL_AUTO_SIZE_KEY = 'allAutoSize';
     /**
      * [Description for $title]
      *
@@ -53,10 +58,14 @@ class Sheet implements SerializableEntityInterface
      */
     protected $mergeCellList;
 
-    /**
-     * @var array
-     */
-    protected $columnWidthList;
+    /** @var array<string,float> */
+    protected $columnsWidth;
+
+    /** @var array<string,string> */
+    protected $columnsAutoSize;
+    
+    /** @var bool */
+    protected $allColumnsAutoSize;
 
     /**
      * @var array
@@ -74,7 +83,9 @@ class Sheet implements SerializableEntityInterface
 
         $this->mergeCellList = [];
 
-        $this->columnWidthList = [];
+        $this->columnsWidth = [];
+        $this->columnsAutoSize = [];
+        $this->allColumnsAutoSize = false;
 
         $this->rowHeightList = [];
     }
@@ -92,16 +103,22 @@ class Sheet implements SerializableEntityInterface
             $serializedStyleList[] = $serializedStyle;
         }
         
-        $columnWidthList = empty($this->columnWidthList) ? null : $this->columnWidthList;
-        $rowHeightList = empty($this->rowHeightList) ? null : $this->rowHeightList;
+        $columnsWidth = empty($this->columnsWidth) ? null : $this->columnsWidth;
+        $columnsWithAutoSize = empty($this->columnsAutoSize) ? null : $this->columnsAutoSize;
+        $rowsHeight = empty($this->rowHeightList) ? null : $this->rowHeightList;
 
         return [
             'title'           => $this->title,
             'cellList'        => array_values($this->filledCellList),
             'styleList'       => $serializedStyleList,
             'mergeList'       => array_values($this->mergeCellList),
-            'columnWidthList' => $columnWidthList,
-            'rowHeightList'   => $rowHeightList,
+            'rowHeightList'   => $rowsHeight,
+
+            self::COLUMN_SETTINGS_KEY => [
+                self::COLUMN_WIDTHS_KEY        => $columnsWidth,
+                self::COLUMN_AUTO_SIZE_KEY     => $columnsWithAutoSize,
+                self::COLUMN_ALL_AUTO_SIZE_KEY => $this->columnsAutoSize,
+            ],
         ];
     }
 
@@ -258,38 +275,28 @@ class Sheet implements SerializableEntityInterface
     // }
     #endregion Merge Cell
 
-    #region Column and Row Size
+    #region Column Size
     //TODO: Validate Sheet set columns width methods
+
     /**
-     * [Description for setColumnWidthByAddress]
-     *
-     * @param string $colSymbol (A)
-     * @param int $width
-     *
-     * @return [type]
-     *
+     * Устанавливает ширину в пикселях для колонки
      */
-    public function setColumnWidthByAddress(string $colSymbol, int $width)
+    public function setColumnWidthByAddress(string $colSymbol, float $width): Sheet
     {
-        $this->columnWidthList[$colSymbol] = $width;
+        $this->columnsWidth[$colSymbol] = $width;
 
         return $this;
     }
 
     /**
-     * [Description for setColumnWidthByIndex]
-     *
-     * @param int $colIndex (A = 1)
-     * @param int $width
-     *
-     * @return [type]
-     *
+     * Устанавливает ширину в пикселях для колонки переданной в качестве индекса.
+     * Прим. (А = 1)
      */
-    public function setColumnWidthByIndex(int $colIndex, int $width)
+    public function setColumnWidthByIndex(int $colIndex, float $width): Sheet
     {
         $colSymbol = static::stringFromColumnIndex($colIndex);
 
-        $this->columnWidthList[$colSymbol] = $width;
+        $this->columnsWidth[$colSymbol] = $width;
 
         return $this;
     }
@@ -299,14 +306,12 @@ class Sheet implements SerializableEntityInterface
      * or 
      * ['key1' => 10, 'key2' => 12, 'key3' => 3 ...] is not associative ($isAssociative = false)
      * auto transform to associative ['A' => 10, 'B' => 12, 'C' => 3 ...]
-     *
-     * @param array $columns
      */
     public function setColumnsWidth(array $columns, bool $isAssociative = true): void
     {
         if ($isAssociative) {
             foreach ($columns as $colSymbol => $width) {
-                $this->columnWidthList[$colSymbol] = $width;
+                $this->columnsWidth[$colSymbol] = $width;
             }
 
             return;
@@ -315,10 +320,37 @@ class Sheet implements SerializableEntityInterface
         foreach (array_values($columns) as $index => $width) {
             $colSymbol = static::stringFromColumnIndex($index + 1);
 
-            $this->columnWidthList[$colSymbol] = $width;
+            $this->columnsWidth[$colSymbol] = $width;
         }
     }
 
+    public function setColumnAutoSizeByAddress(string $colSymbol, bool $autoSize = true): Sheet
+    {
+        $this->setColumnAutoSize($colSymbol, $autoSize);
+
+        return $this;
+    }
+
+    public function setColumnAutoSizeByIndex(int $colIndex, bool $autoSize = true): Sheet
+    {
+        $colSymbol = static::stringFromColumnIndex($colIndex);
+
+        $this->setColumnAutoSize($colSymbol, $autoSize);
+
+        return $this;
+    }
+
+    private function setColumnAutoSize(string $colSymbol, bool $autoSize): void
+    {
+        if ($autoSize) {
+            $this->columnsAutoSize[$colSymbol] = $colSymbol;
+        } else {
+            unset($this->columnsAutoSize[$colSymbol]);
+        }
+    }
+    #endregion Column Size
+
+    #region Row Size
     public function setRowHeight(int $rowIndex, int $height): void
     {
         $this->rowHeightList[$rowIndex] = $height;
@@ -330,7 +362,7 @@ class Sheet implements SerializableEntityInterface
             $this->rowHeightList[$rowIndex] = $height;
         }
     }
-    #endregion Column and Row Size
+    #endregion Row Size
 
     #region PHP Spreadsheet Coordinate methods
 
