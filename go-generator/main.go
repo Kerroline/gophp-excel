@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -26,6 +27,13 @@ const SAVE_SPREADSHEET_AS_STRING_ERROR_CODE = 18
 const SAVE_SPREADSHEET_AS_FILE_ERROR_CODE = 19
 const GET_SHEET_BY_TITLE_ERROR_CODE = 20
 const MATCH_COLUMN_ADDRESS_ERROR_CODE = 21
+const SET_CELL_VALUE_ERROR_CODE = 22
+const SET_CELL_STYLE_ERROR_CODE = 23
+const MERGE_CELL_ERROR_CODE = 24
+const SET_COLUMN_WIDTH_ERROR_CODE = 25
+const SET_ROW_WIDTH_ERROR_CODE = 26
+
+const MAX_COLUMN_WIDTH = 254.99
 
 type CellRange struct {
 	From string `json:"from"`
@@ -81,7 +89,7 @@ type Sheet struct {
 	StyleList      []Style         `json:"styleList"`
 	MergeList      []CellRange     `json:"mergeList"`
 	ColumnSettings ColumnSettings  `json:"columnSettings"`
-	RowsHeight     map[int]float64 `json:"rowHeightList,omitempty"`
+	RowsHeight     map[int]float64 `json:"rowHeightList"`
 }
 
 //endregion Sheet
@@ -117,6 +125,17 @@ func main() {
 	// Генерируем каждый лист
 	for _, sheet := range data.Spreadsheet.SheetList {
 
+		autoSizeColumns := make(map[string]float64)
+		if sheet.ColumnSettings.Widths == nil {
+			sheet.ColumnSettings.Widths = make(map[string]float64)
+		}
+		if sheet.ColumnSettings.AutoSize == nil {
+			sheet.ColumnSettings.AutoSize = make(map[string]string)
+		}
+		if sheet.RowsHeight == nil {
+			sheet.RowsHeight = make(map[int]float64)
+		}
+
 		_, err := spreadsheet.NewSheet(sheet.Title)
 		if err != nil {
 			writeResponse(CREATE_NEW_SHEET_ERROR_CODE, err.Error())
@@ -124,22 +143,40 @@ func main() {
 
 		// Заполняем данными полученные ячейки
 		for _, cell := range sheet.CellList {
-			spreadsheet.SetCellValue(sheet.Title, cell.Address, cell.Value)
+			if err := spreadsheet.SetCellValue(sheet.Title, cell.Address, cell.Value); err != nil {
+				writeResponse(SET_CELL_VALUE_ERROR_CODE, err.Error())
+			}
 
-			column := getColumnAddress(cell.Address)
-			_, isNeedColumnSetAutoSize := sheet.ColumnSettings.AutoSize[column]
+			// Вместо этой залупы нужен нормальный тайпчекер, который все будет приводить к стрингу
+			if cell.Value != nil {
 
-			if isNeedColumnSetAutoSize || sheet.ColumnSettings.AllAutoSize {
+				column, err := getColumnAddress(cell.Address)
+				if err != nil {
+					writeResponse(MATCH_COLUMN_ADDRESS_ERROR_CODE, err.Error())
+				}
 
-				_, isHasCustomWidth := sheet.ColumnSettings.Widths[column]
+				_, isNeedColumnSetAutoSize := sheet.ColumnSettings.AutoSize[column]
 
-				if !isHasCustomWidth {
-					// Временный экспериментальный костыль
-					// Пока не аппрувнут https://github.com/qax-os/excelize/pull/1386
-					defaultFontSize := 10
-					columnWidth := calculateColumnWidthWithPadding(cell.Value.(string), defaultFontSize)
+				if isNeedColumnSetAutoSize || sheet.ColumnSettings.AllAutoSize {
 
-					sheet.ColumnSettings.Widths[column] = columnWidth
+					_, isHasCustomWidth := sheet.ColumnSettings.Widths[column]
+
+					if !isHasCustomWidth {
+						// Временный экспериментальный костыль
+						// Пока не аппрувнут https://github.com/qax-os/excelize/pull/1386
+						defaultFontSize := 11
+						calculatedWidth := calculateColumnWidthWithPadding(cell.Value.(string), defaultFontSize)
+
+						currentWidth, ok := autoSizeColumns[column]
+
+						if ok {
+							if calculatedWidth > currentWidth {
+								autoSizeColumns[column] = calculatedWidth
+							}
+						} else {
+							autoSizeColumns[column] = calculatedWidth
+						}
+					}
 				}
 			}
 		}
@@ -249,24 +286,46 @@ func main() {
 		for cellAddress, StyleIdSequence := range cellAddressStyleIdSequenceDictionary {
 			styleId := StyleIdSequence[len(StyleIdSequence)-1]
 
-			spreadsheet.SetCellStyle(sheet.Title, cellAddress, cellAddress, styleId)
+			if err := spreadsheet.SetCellStyle(sheet.Title, cellAddress, cellAddress, styleId); err != nil {
+				writeResponse(SET_CELL_STYLE_ERROR_CODE, err.Error())
+			}
 		}
 
 		// Мерджим все ячейки для этого листа
 		for _, cellRange := range sheet.MergeList {
-			spreadsheet.MergeCell(sheet.Title, cellRange.From, cellRange.To)
+			if err := spreadsheet.MergeCell(sheet.Title, cellRange.From, cellRange.To); err != nil {
+				writeResponse(MERGE_CELL_ERROR_CODE, err.Error())
+			}
 		}
 
 		// место под выставления автоширины колонок
 
 		// Выставляем ширину всех колонок
 		for cellSymbol, width := range sheet.ColumnSettings.Widths {
-			spreadsheet.SetColWidth(sheet.Title, cellSymbol, cellSymbol, width)
+			if width > MAX_COLUMN_WIDTH {
+				width = MAX_COLUMN_WIDTH
+			}
+
+			if err := spreadsheet.SetColWidth(sheet.Title, cellSymbol, cellSymbol, width); err != nil {
+				writeResponse(SET_COLUMN_WIDTH_ERROR_CODE, err.Error())
+			}
+		}
+
+		for cellSymbol, width := range autoSizeColumns {
+			if width > MAX_COLUMN_WIDTH {
+				width = MAX_COLUMN_WIDTH
+			}
+
+			if err := spreadsheet.SetColWidth(sheet.Title, cellSymbol, cellSymbol, width); err != nil {
+				writeResponse(SET_COLUMN_WIDTH_ERROR_CODE, err.Error())
+			}
 		}
 
 		// Выставляем высоту всех строк
 		for rowIndex, height := range sheet.RowsHeight {
-			spreadsheet.SetRowHeight(sheet.Title, rowIndex, height)
+			if err := spreadsheet.SetRowHeight(sheet.Title, rowIndex, height); err != nil {
+				writeResponse(SET_ROW_WIDTH_ERROR_CODE, err.Error())
+			}
 		}
 	}
 
@@ -496,36 +555,32 @@ func writeResponse(code int, content string) {
 	os.Exit(code)
 }
 
-func getColumnAddress(cell string) string {
+func getColumnAddress(cell string) (string, error) {
 	regex := regexp.MustCompile(`^[A-Z]+`)
 
 	matches := regex.FindStringSubmatch(cell)
 
 	if len(matches) > 0 {
-		return matches[0]
+		return matches[0], nil
 	}
 
-	writeResponse(MATCH_COLUMN_ADDRESS_ERROR_CODE, "No regex match column address by cell address")
-	return ""
+	return "", errors.New("getColumnAddress: No regex match column address by cell address")
 }
+
+const (
+	DEFAULT_CHARACTER_WIDTH   = 8.26
+	APPROXIMATELY_COEFFICIENT = 11.0
+	DEFAULT_FONT_WIDTH        = 9.14062500
+	DEFALT_FONT_PIXEL_WIDTH   = 64.0
+)
 
 func calculateColumnWidthWithPadding(text string, fontSize int) float64 {
-	// Фишка экселя с двусторонним падингом текста
-	paddingWidth := calculateColumnWidth("n", fontSize)
-	textWidth := calculateColumnWidth(text, fontSize)
-	width := paddingWidth + textWidth
-
-	return width
-}
-
-const DEFAULT_CHARACTER_WIDTH = 8.26
-const APPROXIMATELY_COEFFICIENT = 11.0
-
-func calculateColumnWidth(text string, fontSize int) float64 {
 	textWidth := utf8.RuneCountInString(text)
 	columnWidth := DEFAULT_CHARACTER_WIDTH * float64(textWidth)
 
 	approxWidth := columnWidth * float64(fontSize) / APPROXIMATELY_COEFFICIENT
 
-	return approxWidth
+	result := approxWidth * DEFAULT_FONT_WIDTH / DEFALT_FONT_PIXEL_WIDTH
+
+	return result
 }
