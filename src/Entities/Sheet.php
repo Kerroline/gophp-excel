@@ -484,7 +484,7 @@ class Sheet implements SerializableEntityInterface
 
         $this->filledCellList[$cell] = [
             self::CellValueAddressKey => $cell,
-            self::CellValueValueKey   => $value,
+            self::CellValueValueKey   => is_string($value) ? $value : json_encode($value),
         ];
     }
 
