@@ -47,8 +47,8 @@ class setActiveSheetTest extends TestCase
         $excepted = self::SHEET_TITLE;
 
         $this->assertEquals(
-            $activeSheet,
-            $excepted
+            $excepted,
+            $activeSheet
         );
     }
 
@@ -75,8 +75,8 @@ class setActiveSheetTest extends TestCase
         $excepted = self::SHEET_TITLE;
 
         $this->assertEquals(
-            $activeSheet,
-            $excepted
+            $excepted,
+            $activeSheet
         );
     }
 
