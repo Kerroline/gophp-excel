@@ -32,6 +32,7 @@ const SET_CELL_STYLE_ERROR_CODE = 23
 const MERGE_CELL_ERROR_CODE = 24
 const SET_COLUMN_WIDTH_ERROR_CODE = 25
 const SET_ROW_WIDTH_ERROR_CODE = 26
+const GET_CELL_VALUE_ERROR_CODE = 27
 
 const MAX_COLUMN_WIDTH = 254.99
 
@@ -147,37 +148,39 @@ func main() {
 				writeResponse(SET_CELL_VALUE_ERROR_CODE, err.Error())
 			}
 
-			// Вместо этой залупы нужен нормальный тайпчекер, который все будет приводить к стрингу
-			if cell.Value != nil {
+			column, err := getColumnAddress(cell.Address)
+			if err != nil {
+				writeResponse(MATCH_COLUMN_ADDRESS_ERROR_CODE, err.Error())
+			}
 
-				column, err := getColumnAddress(cell.Address)
-				if err != nil {
-					writeResponse(MATCH_COLUMN_ADDRESS_ERROR_CODE, err.Error())
-				}
+			_, isNeedColumnSetAutoSize := sheet.ColumnSettings.AutoSize[column]
 
-				_, isNeedColumnSetAutoSize := sheet.ColumnSettings.AutoSize[column]
+			if isNeedColumnSetAutoSize || sheet.ColumnSettings.AllAutoSize {
 
-				if isNeedColumnSetAutoSize || sheet.ColumnSettings.AllAutoSize {
+				_, isHasCustomWidth := sheet.ColumnSettings.Widths[column]
 
-					_, isHasCustomWidth := sheet.ColumnSettings.Widths[column]
+				if !isHasCustomWidth {
+					setValueAsString, err := spreadsheet.GetCellValue(sheet.Title, cell.Address)
+					if err != nil {
+						writeResponse(GET_CELL_VALUE_ERROR_CODE, err.Error())
+					}
 
-					if !isHasCustomWidth {
-						// Временный экспериментальный костыль
-						// Пока не аппрувнут https://github.com/qax-os/excelize/pull/1386
-						defaultFontSize := 11
-						calculatedWidth := calculateColumnWidthWithPadding(cell.Value.(string), defaultFontSize)
+					// Временный экспериментальный костыль
+					// Пока не аппрувнут https://github.com/qax-os/excelize/pull/1386
+					defaultFontSize := 11
+					calculatedWidth := calculateColumnWidthWithPadding(setValueAsString, defaultFontSize)
 
-						currentWidth, ok := autoSizeColumns[column]
+					currentWidth, ok := autoSizeColumns[column]
 
-						if ok {
-							if calculatedWidth > currentWidth {
-								autoSizeColumns[column] = calculatedWidth
-							}
-						} else {
+					if ok {
+						if calculatedWidth > currentWidth {
 							autoSizeColumns[column] = calculatedWidth
 						}
+					} else {
+						autoSizeColumns[column] = calculatedWidth
 					}
 				}
+
 			}
 		}
 
