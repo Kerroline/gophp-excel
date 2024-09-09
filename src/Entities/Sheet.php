@@ -2,8 +2,20 @@
 
 namespace Kerroline\PhpGoExcel\Entities;
 
-class Sheet
+use Kerroline\PhpGoExcel\Interfaces\SerializableEntityInterface;
+
+class Sheet implements SerializableEntityInterface
 {
+    public const CellValueAddressKey = 'address';
+    public const CellValueValueKey   = 'value';
+
+    public const MergeFromKey = 'from';
+    public const MergeToKey   = 'to';
+
+    public const COLUMN_SETTINGS_KEY = 'columnSettings';
+    public const COLUMN_WIDTHS_KEY = 'widths';
+    public const COLUMN_AUTO_SIZE_KEY = 'autoSize';
+    public const COLUMN_ALL_AUTO_SIZE_KEY = 'allAutoSize';
     /**
      * [Description for $title]
      *
@@ -46,10 +58,14 @@ class Sheet
      */
     protected $mergeCellList;
 
-    /**
-     * @var array
-     */
-    protected $columnWidthList;
+    /** @var array<string,float> */
+    protected $columnsWidth;
+
+    /** @var array<string,string> */
+    protected $columnsAutoSize;
+    
+    /** @var bool */
+    protected $allColumnsAutoSize;
 
     /**
      * @var array
@@ -67,7 +83,9 @@ class Sheet
 
         $this->mergeCellList = [];
 
-        $this->columnWidthList = [];
+        $this->columnsWidth = [];
+        $this->columnsAutoSize = [];
+        $this->allColumnsAutoSize = false;
 
         $this->rowHeightList = [];
     }
@@ -84,14 +102,23 @@ class Sheet
 
             $serializedStyleList[] = $serializedStyle;
         }
+        
+        $columnsWidth = empty($this->columnsWidth) ? null : $this->columnsWidth;
+        $columnsWithAutoSize = empty($this->columnsAutoSize) ? null : $this->columnsAutoSize;
+        $rowsHeight = empty($this->rowHeightList) ? null : $this->rowHeightList;
 
         return [
             'title'           => $this->title,
             'cellList'        => array_values($this->filledCellList),
             'styleList'       => $serializedStyleList,
             'mergeList'       => array_values($this->mergeCellList),
-            'columnWidthList' => $this->columnWidthList,
-            'rowHeightList'   => $this->rowHeightList,
+            'rowHeightList'   => $rowsHeight,
+
+            self::COLUMN_SETTINGS_KEY => [
+                self::COLUMN_WIDTHS_KEY        => $columnsWidth,
+                self::COLUMN_AUTO_SIZE_KEY     => $columnsWithAutoSize,
+                self::COLUMN_ALL_AUTO_SIZE_KEY => $this->allColumnsAutoSize,
+            ],
         ];
     }
 
@@ -110,42 +137,36 @@ class Sheet
 
 
     #region Test Garbage
-    // public function getMaxRowIndex(): int
-    // {
-    //   return $this->maxRowIndex;
-    // }
+    public function getMaxRowIndex(): int
+    {
+        return $this->maxRowIndex;
+    }
 
-    // public function getMaxRowNumber(): int
-    // {
-    //   return $this->getMaxRowIndex();
-    // }
+    public function getMaxColumnIndex(): int
+    {
+        return $this->maxColumnIndex;
+    }
 
-    // public function getMaxColumnIndex(): int
-    // {
-    //   return $this->maxColumnIndex;
-    // }
-
-    // public function getMaxColumnSymbol(): int
-    // {
-    //   return static::stringFromColumnIndex($this->maxColumnIndex);
-    // }
+    public function getMaxColumnSymbol(): int
+    {
+        return static::stringFromColumnIndex($this->maxColumnIndex);
+    }
     #endregion Test Garbage
 
     #region Set Cell Value
 
     //TODO: Validate string and array cell index
     /**
-     * [Description for setCellValue]
-     *
      * @param string $cell
      * @param mixed $value
      */
-    public function setCellValue(string $cell, $value): void
+    public function setCellValueByAddress(string $cell, $value): void
     {
-        $this->filledCellList[$cell] = [
-            'address' => $cell,
-            'value' => $value,
-        ];
+        [$colSymbol, $rowIndex] = static::coordinateFromString($cell);
+
+        $colIndex = static::columnIndexFromString($colSymbol);
+
+        $this->setCellValue($colIndex, $rowIndex, $value);
     }
 
     /**
@@ -157,9 +178,7 @@ class Sheet
      */
     public function setCellValueByCoordinates(int $colIndex, int $rowIndex, $value): void
     {
-        $cell = $this->calculateCellAddress($colIndex, $rowIndex);
-
-        $this->setCellValue($cell, $value);
+        $this->setCellValue($colIndex, $rowIndex, $value);
     }
 
     public function setRow(int $rowIndex, array $values): void
@@ -199,7 +218,7 @@ class Sheet
         ];
     }
 
-    public function setCellStyleByCoordinates(int $colIndex, int $rowIndex, Style $style)
+    public function setCellStyleByCoordinates(int $colIndex, int $rowIndex, Style &$style)
     {
         $cell = $this->calculateCellAddress($colIndex, $rowIndex);
 
@@ -231,8 +250,8 @@ class Sheet
     public function mergeCellByAddress(string $fromCell, string $toCell)
     {
         $this->mergeCellList[] = [
-            'from'  => $fromCell,
-            'to'    => $toCell,
+            self::MergeFromKey => $fromCell,
+            self::MergeToKey   => $toCell,
         ];
     }
 
@@ -242,8 +261,8 @@ class Sheet
         $toCell = $this->calculateCellAddress($toColIndex, $toRowIndex);
 
         $this->mergeCellList[] = [
-            'from'  => $fromCell,
-            'to'    => $toCell,
+            self::MergeFromKey => $fromCell,
+            self::MergeToKey   => $toCell,
         ];
     }
 
@@ -256,79 +275,102 @@ class Sheet
     // }
     #endregion Merge Cell
 
-    #region Column and Row Size
+    #region Column Size
     //TODO: Validate Sheet set columns width methods
+
     /**
-     * [Description for setColumnWidthByAddress]
-     *
-     * @param string $colSymbol (A)
-     * @param int $width
-     *
-     * @return [type]
-     *
+     * Устанавливает ширину в пикселях для колонки
      */
-    public function setColumnWidthByAddress(string $colSymbol, int $width)
+    public function setColumnWidthByAddress(string $colSymbol, float $width): Sheet
     {
-        $this->columnWidthList[$colSymbol] = $width;
+        $this->columnsWidth[$colSymbol] = $width;
 
         return $this;
     }
 
     /**
-     * [Description for setColumnWidthByIndex]
-     *
-     * @param int $colIndex (A = 1)
-     * @param int $width
-     *
-     * @return [type]
-     *
+     * Устанавливает ширину в пикселях для колонки переданной в качестве индекса.
+     * Прим. (А = 1)
      */
-    public function setColumnWidthByIndex(int $colIndex, int $width)
+    public function setColumnWidthByIndex(int $colIndex, float $width): Sheet
     {
         $colSymbol = static::stringFromColumnIndex($colIndex);
 
-        $this->columnWidthList[$colSymbol] = $width;
+        $this->columnsWidth[$colSymbol] = $width;
 
         return $this;
     }
 
     /**
-     * [Description for setColumnsWidth]
-     *
-     * [
-     *  'A' => 10,
-     *  'B' => 12,
-     *  ...
-     * ]
-     *
-     * @param array $columns
-     *
-     * @return [type]
-     *
+     * ['A' => 10, 'B' => 12, ... 'E' => 5, ...] is associative 
+     * or 
+     * ['key1' => 10, 'key2' => 12, 'key3' => 3 ...] is not associative ($isAssociative = false)
+     * auto transform to associative ['A' => 10, 'B' => 12, 'C' => 3 ...]
      */
-    public function setColumnsWidth(array $columns)
+    public function setColumnsWidth(array $columns, bool $isAssociative = true): void
     {
-        foreach ($columns as $colSymbol => $width) {
-            $this->columnWidthList[$colSymbol] = $width;
+        if ($isAssociative) {
+            foreach ($columns as $colSymbol => $width) {
+                $this->columnsWidth[$colSymbol] = $width;
+            }
+
+            return;
         }
+
+        foreach (array_values($columns) as $index => $width) {
+            $colSymbol = static::stringFromColumnIndex($index + 1);
+
+            $this->columnsWidth[$colSymbol] = $width;
+        }
+    }
+
+    public function setAllColumnsAutoSize(bool $value = true): Sheet
+    {
+        $this->allColumnsAutoSize = $value;
 
         return $this;
     }
 
-    public function setRowHeight(int $rowIndex, int $height)
+    public function setColumnAutoSizeByAddress(string $colSymbol, bool $autoSize = true): Sheet
+    {
+        $this->setColumnAutoSize($colSymbol, $autoSize);
+
+        return $this;
+    }
+
+    public function setColumnAutoSizeByIndex(int $colIndex, bool $autoSize = true): Sheet
+    {
+        $colSymbol = static::stringFromColumnIndex($colIndex);
+
+        $this->setColumnAutoSize($colSymbol, $autoSize);
+
+        return $this;
+    }
+
+
+    private function setColumnAutoSize(string $colSymbol, bool $autoSize): void
+    {
+        if ($autoSize) {
+            $this->columnsAutoSize[$colSymbol] = $colSymbol;
+        } else {
+            unset($this->columnsAutoSize[$colSymbol]);
+        }
+    }
+    #endregion Column Size
+
+    #region Row Size
+    public function setRowHeight(int $rowIndex, int $height): void
     {
         $this->rowHeightList[$rowIndex] = $height;
     }
 
-    public function setRowsHeight(array $rows)
+    public function setRowsHeight(array $rows): void
     {
         foreach ($rows as $rowIndex => $height) {
             $this->rowHeightList[$rowIndex] = $height;
         }
-
-        return $this;
     }
-    #endregion Column and Row Size
+    #endregion Row Size
 
     #region PHP Spreadsheet Coordinate methods
 
@@ -355,7 +397,7 @@ class Sheet
      *
      * @return int Column index (A = 1)
      */
-    public static function columnIndexFromString(string $pString)
+    public static function columnIndexFromString(string $pString): int
     {
         //    Using a lookup cache adds a slight memory overhead, but boosts speed
         //    caching using a static within the method is faster than a class static,
@@ -403,7 +445,7 @@ class Sheet
      *
      * @return string
      */
-    public static function stringFromColumnIndex(int $columnIndex)
+    public static function stringFromColumnIndex(int $columnIndex): string
     {
         static $indexCache = [];
 
@@ -420,5 +462,40 @@ class Sheet
 
         return $indexCache[$columnIndex];
     }
+
+    public static function coordinateFromString(string $cellAddress): array
+    {
+        if (preg_match('/^(?<col>\$?[A-Z]{1,3})(?<row>\$?\d{1,7})$/i', $cellAddress, $matches)) {
+            return [$matches['col'], $matches['row']];
+        } elseif ($cellAddress === '') {
+            throw new \Exception('Cell coordinate can not be zero-length string');
+        }
+
+        throw new \Exception('Invalid cell coordinate ' . $cellAddress);
+    }
     #endregion PHP Spreadsheet Coordinate methods
+
+
+    private function setCellValue(int $colIndex, int $rowIndex, $value)
+    {
+        $cell = $this->calculateCellAddress($colIndex, $rowIndex);
+
+        $this->updateMaxCell($colIndex, $rowIndex);
+
+        $this->filledCellList[$cell] = [
+            self::CellValueAddressKey => $cell,
+            self::CellValueValueKey   => $value,
+        ];
+    }
+
+    private function updateMaxCell(int $colIndex, int $rowIndex)
+    {
+        if ($this->maxColumnIndex < $colIndex) {
+            $this->maxColumnIndex = $colIndex;
+        }
+
+        if ($this->maxRowIndex < $rowIndex) {
+            $this->maxRowIndex = $rowIndex;
+        }
+    }
 }

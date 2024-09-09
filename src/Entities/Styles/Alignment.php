@@ -2,13 +2,14 @@
 
 namespace Kerroline\PhpGoExcel\Entities\Styles;
 
+use Kerroline\PhpGoExcel\Interfaces\SerializableEntityInterface;
 use Kerroline\PhpGoExcel\Entities\Styles\Alignments\{
   Horizontal,
   ReadingOrder,
   Vertical,
 };
 
-class Alignment
+class Alignment implements SerializableEntityInterface
 {
   /**
    * All keys witch supported golang excel library

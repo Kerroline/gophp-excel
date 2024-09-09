@@ -2,13 +2,14 @@
 
 namespace Kerroline\PhpGoExcel\Entities;
 
+use Kerroline\PhpGoExcel\Interfaces\SerializableEntityInterface;
 use Kerroline\PhpGoExcel\Entities\Styles\{
     Alignment,
     Border,
     Font,
 };
 
-class Style
+class Style implements SerializableEntityInterface
 {
     /**
      * @var Alignment
