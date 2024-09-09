@@ -1,31 +1,23 @@
-apt update
+# Что
+Пакет генерации Excel файлов из JSON файлов
 
-apt install wget
+Реализовывается поверх проекта:
+https://github.com/Kerroline/Excel-From-Json
 
-wget https://dl.google.com/go/go1.21.5.linux-amd64.tar.gz
+Доступные OS:
+* MacOS (Darvin) x64
+* Linux x64
 
-sudo tar -C /opt -xzf go1.21.5.linux-amd64.tar.gz
+# Зачем
+Скорость генерации Excel файлов
 
-export PATH=$PATH:/opt/go/bin
+# Как 
+```cmd
+composer require kerroline/gophp-excel
+```
 
-go version 
+# Где
+[Документация](docs/usage.md)
 
-MUST BE EQUAL `go version go1.21.5 linux/amd64`
-
-cd vendor/kerroline/gophp-excel/go-generator/
-
-go build -o generator main.go
-
-- cd root
-
-cd app
-
-mkdir PhpGoExcel
-
-- cd root
-
-mv vendor/kerroline/gophp-excel/go-generator/bin/generator app/PhpGoExcel/generator
-
-Examples until 0.1.*: 
-
-
+# Кто
+// later
