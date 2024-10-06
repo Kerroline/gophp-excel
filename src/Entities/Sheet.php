@@ -387,7 +387,11 @@ class Sheet implements SerializableEntityInterface
     {
         $symbol = static::stringFromColumnIndex($colIndex);
 
-        return  "{$symbol}{$rowIndex}";
+        $address = "{$symbol}{$rowIndex}";
+
+        $this->validateCellAddress($address);
+
+        return $address;
     }
 
     /**
@@ -480,12 +484,23 @@ class Sheet implements SerializableEntityInterface
     {
         $cell = $this->calculateCellAddress($colIndex, $rowIndex);
 
+        $this->validateCellAddress($cell);
+
         $this->updateMaxCell($colIndex, $rowIndex);
 
         $this->filledCellList[$cell] = [
             self::CellValueAddressKey => $cell,
             self::CellValueValueKey   => $value,
         ];
+    }
+
+    private function validateCellAddress(string $cellAddress): void
+    {
+        $pattern = '^(?:[A-Z]|[A-Z][A-Z]|[A-X][A-F][A-D])(?:[1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9][0-9]|10[0-3][0-9][0-9][0-9][0-9]|104[0-7][0-9][0-9][0-9]|1048[0-4][0-9][0-9]|10485[0-6][0-9]|104857[0-6])$';
+        
+        if (!preg_match($pattern, $cellAddress)) {
+            throw new \Exception('Invalid cell coordinate ' . $cellAddress);
+        }
     }
 
     private function updateMaxCell(int $colIndex, int $rowIndex)
